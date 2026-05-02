@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIMP-Ai: PERNIAGAAN — JU Daerah</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="ju.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="setTab(this,'dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="setTab(this,'semak')">🔬 Semak Analisis</button>
+    <button class="nav-tab" onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge nb-ju" id="nav-badge">JU DAERAH</span>
+    <div class="nav-avatar" id="nav-avatar">—</div>
+    <button class="btn-logout" onclick="doLogout()">↩ Keluar</button>
+  </div>
+</nav>
+<main>
+
+<!-- DASHBOARD -->
+<div class="page show" id="page-dashboard">
+  <div class="sec-hd">
+    <div><div class="sec-title" id="greeting">Dashboard JU Daerah 👨‍🏫</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
+    <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=semak]'),'semak')">🔬 Semak Analisis</button>
+  </div>
+  <div class="stats-row stats-3">
+    <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">🏫</div></div><div class="stat-val" id="s-sekolah">—</div><div class="stat-lbl">Sekolah Dalam Daerah</div></div>
+    <div class="stat-card sc-em"><div class="stat-top"><div class="stat-ico">👩‍🎓</div></div><div class="stat-val" id="s-murid">—</div><div class="stat-lbl">Murid Direkod</div></div>
+    <div class="stat-card sc-ro"><div class="stat-top"><div class="stat-ico">⚠️</div></div><div class="stat-val" id="s-risiko">—</div><div class="stat-lbl">Murid Berisiko</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">🏫 Status Sekolah</div></div>
+    <div class="card-body" style="padding:0" id="skl-status"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+
+<!-- SEMAK ANALISIS -->
+<div class="page" id="page-semak">
+  <div class="sec-hd"><div><div class="sec-title">Semak Analisis 🔬</div></div></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-3">
+        <div class="form-group"><label class="form-label">Sekolah</label><select class="form-select" id="af-skl"><option value="">Semua Sekolah</option></select></div>
+        <div class="form-group"><label class="form-label">Jenis</label><select class="form-select" id="af-jenis"><option value="">Semua</option><option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option><option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option><option value="PERCUBAAN SPM">PSPM</option></select></div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option></select></div>
+      </div>
+      <div style="margin-top:14px"><button class="btn-primary" onclick="muatSemak()">🔍 Papar Analisis</button></div>
+    </div>
+  </div>
+  <div id="semak-result"><div class="empty-state card" style="padding:40px"><div class="ico">🔬</div><p>Pilih sekolah dan klik Papar.</p></div></div>
+</div>
+
+<!-- MURID BERISIKO -->
+<div class="page" id="page-berisiko">
+  <div class="sec-hd"><div><div class="sec-title">Murid Berisiko ⚠️</div></div></div>
+  <div id="risiko-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div> Memuatkan...</div></div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+<script src="analisis.js"></script>
+<script>
+var _ppd='';
+
+window.addEventListener('load',async()=>{
+  const ok=await semakSession('JU_DAERAH'); if(!ok) return;
+  _ppd=STATE.ppd||'';
+  await initNavbar(_ppd||'JU DAERAH','nb-ju');
+  document.getElementById('greeting').textContent=salamMasa()+', '+STATE.nama.split(' ')[0]+' 👨‍🏫';
+  document.getElementById('dash-sub').textContent=_ppd+' · Sesi 2026';
+  document.getElementById('nav-badge').textContent=_ppd||'JU DAERAH';
+  await Promise.all([muatStat(),muatSklStatus(),muatRisiko()]);
+});
+
+function _ppdKod(){return 'PPD_'+(_ppd||'').replace('PPD ','').replace(/ /g,'_').toUpperCase();}
+
+async function muatStat(){
+  const[{count:cSkl},{count:cMurid},{count:cRisiko}]=await Promise.all([
+    db.from('sekolah').select('*',{count:'exact',head:true}).eq('kod_ppd',_ppdKod()),
+    db.from('skor_master').select('*',{count:'exact',head:true}).eq('ppd',_ppd),
+    db.from('skor_master').select('*',{count:'exact',head:true}).eq('ppd',_ppd).or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
+  ]);
+  document.getElementById('s-sekolah').textContent=cSkl||0;
+  document.getElementById('s-murid').textContent=fmtN(cMurid);
+  document.getElementById('s-risiko').textContent=fmtN(cRisiko);
+}
+
+async function muatSklStatus(){
+  const{data}=await db.from('sekolah').select('kod_sekolah,nama_sekolah').eq('kod_ppd',_ppdKod()).order('nama_sekolah');
+  const list=data||[];
+  document.getElementById('af-skl').innerHTML='<option value="">Semua Sekolah</option>'+list.map(s=>`<option value="${s.kod_sekolah}">${s.nama_sekolah}</option>`).join('');
+  const rows=await Promise.all(list.map(async s=>{
+    const{count}=await db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',s.kod_sekolah);
+    return{...s,murid:count||0};
+  }));
+  document.getElementById('skl-status').innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>Sekolah</th><th>Murid</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="font-weight:600">${r.nama_sekolah}</td>
+        <td style="font-family:var(--ffm)">${fmtN(r.murid)}</td>
+        <td><span class="sp ${r.murid>0?'sp-ok':'sp-warn'}">${r.murid>0?'✓ Sync':'⏳ Belum'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function muatSemak(){
+  const params={
+    jenisPentaksiran: document.getElementById('af-jenis').value,
+    tahun:            document.getElementById('af-tahun').value,
+    sekolah:          document.getElementById('af-skl').value
+  };
+  await muatAnalisisSupa(params,'JU_DAERAH','semak-result');
+}
+
+async function muatRisiko(){
+  const{data}=await db.from('skor_master')
+    .select('nama_murid,kelas,nama_sekolah,jumlah_k1,kehadiran,masalah_3m')
+    .eq('ppd',_ppd)
+    .or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
+.order('jumlah_k1').limit(100);
+  if(!data?.length){
+    document.getElementById('risiko-result').innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">✅</div><p>Tiada murid berisiko.</p></div>';
+    return;
+  }
+  document.getElementById('risiko-result').innerHTML=`
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚠️ Murid Berisiko <span class="chip chip-ro">${data.length} murid</span></div></div>
+      <div class="card-body" style="padding:0">
+        <table class="data-table">
+          <thead><tr><th>Nama</th><th>Sekolah</th><th>Kelas</th><th>K1</th><th>Isu</th></tr></thead>
+          <tbody>${data.map(m=>`<tr>
+            <td style="font-weight:600">${m.nama_murid}</td>
+            <td style="font-size:12px;color:var(--sub)">${m.nama_sekolah}</td>
+            <td>${m.kelas||'—'}</td>
+            <td style="font-family:var(--ffm);color:var(--rose);font-weight:700">${m.jumlah_k1||0}</td>
+            <td>${m.kehadiran==='TIDAK HADIR'?'<span class="sp sp-mute">TH</span>':(m.masalah_3m||'').toUpperCase()==='YA'?'<span class="sp sp-warn">3M</span>':'<span class="sp sp-err">K1&lt;15</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
