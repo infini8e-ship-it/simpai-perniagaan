@@ -80,7 +80,7 @@
       <div class="form-grid form-grid-3">
         <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="af-ting"><option value="">Semua</option><option value="4">T4</option><option value="5">T5</option></select></div>
         <div class="form-group"><label class="form-label">Jenis</label><select class="form-select" id="af-jenis"><option value="">Semua</option><option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option><option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option><option value="PERCUBAAN SPM">PSPM</option></select></div>
-        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option></select></div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select></div>
       </div>
       <div style="margin-top:14px"><button class="btn-primary" onclick="muatAnalisis()">🔍 Papar Analisis</button></div>
     </div>
@@ -125,6 +125,14 @@
           <div class="form-group">
             <label class="form-label">Nama Kelas</label>
             <input class="form-input" id="sm-kelas" placeholder="Contoh: 5 PERNIAGAAN 1" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun</label>
+            <select class="form-select" id="sm-tahun">
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
             <button class="btn-primary" style="width:100%" onclick="cariMurid()">🔍 Muat / Cari</button>
@@ -627,6 +635,7 @@ async function muatRisiko(){
 var _smMurid = [];
 var _smTing  = '';
 var _smKelas = '';
+var _smTahun = '2026';
 
 async function muatListKelas(){
   const{data}=await db.from('senarai_murid')
@@ -640,16 +649,17 @@ async function muatListKelas(){
     return;
   }
   const seen=new Set();
-  const kelas=data.filter(d=>{const k=d.tingkatan+'_'+d.kelas;if(seen.has(k))return false;seen.add(k);return true;});
+  const kelas=data.filter(d=>{const k=d.tingkatan+'_'+d.kelas+'_'+d.tahun;if(seen.has(k))return false;seen.add(k);return true;});
   el.innerHTML=`
     <div class="card">
       <div class="card-head"><div class="card-title">📚 Senarai Kelas <span class="chip">${kelas.length} kelas</span></div></div>
       <div class="card-body" style="padding:0">
         <table class="data-table">
-          <thead><tr><th>Tingkatan</th><th>Kelas</th><th>Tindakan</th></tr></thead>
+          <thead><tr><th>Tingkatan</th><th>Kelas</th><th>Tahun</th><th>Tindakan</th></tr></thead>
           <tbody>${kelas.map(k=>`<tr style="cursor:pointer" onclick="bukaMuridKelas('${k.tingkatan}','${k.kelas}')">
             <td><span class="chip chip-em">T${k.tingkatan}</span></td>
             <td style="font-weight:700">${k.kelas}</td>
+            <td style="font-family:var(--ffm);font-weight:700">${k.tahun||'—'}</td>
             <td><button class="btn-ghost" style="font-size:12px;padding:4px 12px" onclick="event.stopPropagation();bukaMuridKelas('${k.tingkatan}','${k.kelas}')">✏️ Edit Murid</button></td>
           </tr>`).join('')}
           </tbody>
@@ -695,6 +705,7 @@ function detectJantina(nama) {
 async function cariMurid() {
   _smTing  = document.getElementById('sm-ting').value.trim();
   _smKelas = document.getElementById('sm-kelas').value.trim().toUpperCase();
+  _smTahun = document.getElementById('sm-tahun').value;
   if (!_smTing || !_smKelas) { tunjukToast('⚠️ Pilih tingkatan dan nama kelas.','warn'); return; }
 
   document.getElementById('sm-panel').style.display = 'none';
@@ -798,7 +809,7 @@ function tambahBarisBaru() {
     id: null, nama_murid: '', jantina: '',
     kod_sekolah: STATE.kodSekolah,
     nama_sekolah: STATE.namaSekolah,
-    tingkatan: _smTing, kelas: _smKelas, tahun: '2026',
+    tingkatan: _smTing, kelas: _smKelas, tahun: _smTahun,
     isNew: true, isEdit: false, isDelete: false
   });
   renderJadualMurid();
@@ -825,7 +836,7 @@ function prosesNamaPaste() {
     _smMurid.push({
       id: null, nama_murid: nama, jantina: detectJantina(b),
       kod_sekolah: STATE.kodSekolah, nama_sekolah: STATE.namaSekolah,
-      tingkatan: _smTing, kelas: _smKelas, tahun: '2026',
+      tingkatan: _smTing, kelas: _smKelas, tahun: _smTahun,
       isNew: true, isEdit: false, isDelete: false
     });
     namaAda.add(nama);
@@ -864,7 +875,7 @@ async function simpanMurid() {
       const rows = baharu.map(m => ({
         kod_sekolah: STATE.kodSekolah, nama_sekolah: STATE.namaSekolah,
         tingkatan: _smTing, kelas: _smKelas,
-        nama_murid: m.nama_murid.trim(), jantina: m.jantina||null, tahun: '2026'
+        nama_murid: m.nama_murid.trim(), jantina: m.jantina||null, tahun: _smTahun
       }));
       const { error } = await db.from('senarai_murid').insert(rows);
       if (error) throw new Error(error.message);
