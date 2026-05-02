@@ -241,7 +241,7 @@ function fmtN(n) {
 async function muatTahunSesiDinamik() {
   try {
     // Tarik data tahun yang aktif dari jadual 'sesi', susun tahun terkini di atas
-    const { data } = await db.from('sesi').select('tahun').eq('aktif', true).order('tahun', {ascending: false});
+    const { data } = await db.from('sesi').select('tahun').eq('aktif', true).order('tahun', {ascending: true});
     if (!data || data.length === 0) return;
 
     // Bina kod HTML untuk <option>

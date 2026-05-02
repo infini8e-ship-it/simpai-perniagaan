@@ -11,7 +11,7 @@
   <a class="nav-brand" href="guru.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">🏠 Dashboard</button>
-    <button class="nav-tab" onclick="setTab(this,'murid')">👥 Senarai Murid</button>
+    <button class="nav-tab" onclick="setTab(this,'murid');resetViewMurid()">👥 Senarai Murid</button>
     <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak Analisis</button>
     <button class="nav-tab" onclick="setTab(this,'analisis')">📊 Analisis Sekolah</button>
     <button class="nav-tab" onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
@@ -30,6 +30,14 @@
   <div class="sec-hd">
     <div><div class="sec-title" id="greeting">Dashboard Guru ✏️</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
     <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=tapak]'),'tapak')">+ Jana Tapak</button>
+  </div>
+  <div id="panel-kemaskini" style="display:none;margin-bottom:16px">
+    <div class="alert alert-warn" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700">
+        🔔 <span id="kemaskini-count"></span> tapak belum dikemaskini ke JPN
+      </div>
+      <div id="kemaskini-list" style="width:100%;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </div>
   <div class="stats-row stats-3">
     <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">📋</div></div><div class="stat-val" id="s-tapak">—</div><div class="stat-lbl">Tapak Analisis</div></div>
@@ -63,9 +71,10 @@
 <div class="page" id="page-tapak">
   <div class="sec-hd">
     <div><div class="sec-title">Tapak Analisis 📋</div><div class="sec-sub">Urus tapak Google Sheets markah murid</div></div>
-    <button class="btn-primary" onclick="bukaModal('modal-jana')">+ Jana Tapak Baharu</button>
+    <button class="btn-primary" onclick="bukaModalJana()">+ Jana Tapak Baharu</button>
   </div>
-  <div class="alert alert-info">ℹ️ Tapak analisis adalah fail Google Sheets untuk isi markah murid. Setelah diisi, klik <strong>Sync</strong> untuk hantar ke pangkalan data JPN.</div>
+  <div class="alert alert-info">1️⃣ Tapak analisis adalah fail Google Sheets untuk isi markah murid. Setelah diisi, klik <strong>Kemaskini</strong> untuk hantar ke pangkalan data JPN.</div>
+  <div class="alert alert-info">2️⃣ Untuk tambah atau padam murid selepas tapak dijana, buat perubahan terus dalam Google Sheets tapak berkenaan.</div>
   <div class="card">
     <div class="card-head"><div class="card-title">📋 Senarai Tapak <span class="chip" id="tapak-count">—</span></div><button class="btn-ghost" onclick="muatTapak()">🔄</button></div>
     <div class="card-body" style="padding:0" id="tapak-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
@@ -96,6 +105,7 @@
 
 <!-- SENARAI MURID -->
 <div class="page" id="page-murid">
+  <div class="alert alert-info">ℹ️ Senarai murid ini digunakan untuk jana tapak sahaja. Selepas tapak dijana, sebarang perubahan murid perlu dibuat terus dalam Google Sheets tapak berkenaan.</div>
   <div class="sec-hd">
     <div><div class="sec-title">Senarai Murid 👥</div><div class="sec-sub" id="sm-page-sub">Senarai kelas sekolah anda</div></div>
     <button class="btn-primary" id="btn-tambah-kelas" onclick="paparFormCari()">+ Tambah Kelas</button>
@@ -188,12 +198,33 @@
 </main>
 <div class="toast" id="toast"></div>
 
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL JANA TAPAK -->
 <div class="modal-overlay" id="modal-jana">
   <div class="modal-box">
     <div class="modal-head"><div class="modal-title">📋 Jana Tapak Baharu</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
     <div class="modal-body">
       <div class="alert alert-err" id="jana-err" style="display:none"></div>
+      <div id="jana-progress" style="display:none;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:6px" id="jana-progress-label">Menyediakan tapak...</div>
+        <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
+          <div id="jana-progress-bar" style="height:100%;background:var(--indigo);border-radius:99px;width:0%;transition:width 0.4s ease"></div>
+        </div>
+      </div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="j-ting" onchange="muatKelasDropdown(this.value)"><option value="">-- Pilih --</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select></div>
         <div class="form-group"><label class="form-label">Kelas</label>
@@ -209,7 +240,7 @@
         </div>
         <div class="form-group form-full"><label class="form-label">Tahun</label><select class="form-select" id="j-tahun"><option value="2026">2026</option><option value="2025">2025</option></select></div>
       </div>
-      <div class="alert alert-info" style="font-size:12.5px;margin-bottom:0">ℹ️ Rekod tapak akan disimpan. Jana fail Google Sheets memerlukan sambungan GAS (dalam pembinaan).</div>
+      <div class="alert alert-info" style="font-size:12.5px;margin-bottom:0">ℹ️ Pastikan maklumat kelas dan pilihan pentaksiran adalah betul sebelum tapak dijana.</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" id="btn-jana" onclick="doJana()">Jana →</button></div>
   </div>
@@ -291,15 +322,15 @@
 <!-- MODAL SYNC -->
 <div class="modal-overlay" id="modal-sync">
   <div class="modal-box">
-    <div class="modal-head"><div class="modal-title">🔄 Sync Data ke JPN</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-head"><div class="modal-title">🔄 Kemaskini Data ke JPN</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
     <div class="modal-body" id="sync-body">
-      <p style="font-size:13.5px;color:var(--sub);margin-bottom:14px">Hantar data markah murid ke pangkalan data JPN Kedah.</p>
-      <div class="alert alert-warn">⚠️ Pastikan semua markah dalam tapak sudah lengkap sebelum sync.</div>
+      <p style="font-size:13.5px;color:var(--sub);margin-bottom:14px">Kemaskini data markah murid ke pangkalan data JPN Kedah.</p>
+      <div class="alert alert-warn">⚠️ Pastikan semua markah dalam tapak sudah lengkap sebelum dikemaskini.</div>
       <div style="background:var(--bg);border-radius:10px;padding:14px;font-size:13px"><strong id="sync-kelas">—</strong><br><span style="color:var(--sub)" id="sync-jenis">—</span></div>
     </div>
     <div class="modal-foot" id="sync-foot">
       <button class="btn-ghost" onclick="tutupModal()">Batal</button>
-      <button class="btn-primary" onclick="doSync()">🔄 Sync Sekarang</button>
+      <button class="btn-primary" onclick="doKemaskini()">🔄 Kemaskini Sekarang</button>
     </div>
   </div>
 </div>
@@ -310,6 +341,44 @@
 <script>
 var _syncId=null;
 var _syncMeta=null;
+
+function bukaModalKemaskini(id, ssId, kelas, jenis, tingkatan, tahun) {
+  _syncId = id;
+  _syncMeta = { ssId, kelas, jenis, tingkatan, tahun };
+  console.log('bukaModalKemaskini ssId:', ssId);
+  document.getElementById('sync-kelas').textContent = kelas;
+  document.getElementById('sync-jenis').textContent = kodJenis(jenis) + ' · ' + tahun;
+  bukaModal('modal-sync');
+}
+
+async function doKemaskini() {
+  if (!_syncMeta) return;
+    const foot = document.getElementById('sync-foot');
+  foot.innerHTML = '<div class="spinner spinner-dark"></div><span style="font-size:13px;color:var(--sub);margin-left:10px">Sedang dikemaskini...</span>';
+  try {
+    const url = GAS_URL + '?action=sync'
+      + '&ssId=' + encodeURIComponent(_syncMeta.ssId)
+      + '&kodSekolah=' + encodeURIComponent(STATE.kodSekolah)
+      + '&namaSekolah=' + encodeURIComponent(STATE.namaSekolah||'')
+      + '&ppd=' + encodeURIComponent(STATE.ppd||'')
+      + '&tingkatan=' + encodeURIComponent(_syncMeta.tingkatan)
+      + '&kelas=' + encodeURIComponent(_syncMeta.kelas)
+      + '&jenisPentaksiran=' + encodeURIComponent(_syncMeta.jenis)
+      + '&tahun=' + encodeURIComponent(_syncMeta.tahun);
+    const res = await fetch(url);
+    const json = await res.json();
+    tutupModal();
+    if (json.ok) {
+      tunjukToast('✅ ' + _syncMeta.kelas + ' berjaya dikemaskini. ' + json.jumlah + ' murid.', 'success');
+      await muatTapak();
+    } else {
+      tunjukToast('❌ ' + (json.mesej||'Gagal kemaskini.'), 'error');
+    }
+  } catch(e) {
+    tutupModal();
+    tunjukToast('❌ Ralat: ' + e.message, 'error');
+  }
+}
 var GAS_URL='https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
 
 window.addEventListener('load',async()=>{
@@ -334,7 +403,7 @@ window.addEventListener('load',async()=>{
 async function muatStat(){
   const[{count:cT},{count:cM},{count:cR}]=await Promise.all([
     db.from('template_log').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah).neq('status','PADAM'),
-    db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah),
+    db.from('senarai_murid').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah),
     db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah).or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
   ]);
   document.getElementById('s-tapak').textContent=cT||0;
@@ -344,6 +413,25 @@ async function muatStat(){
 
 async function muatTapak(){
   const{data}=await db.from('template_log').select('*').eq('kod_sekolah',STATE.kodSekolah).neq('status','PADAM').order('tarikh',{ascending:false});
+  // Semak tapak perlu dikemaskini
+  const perluKemaskini = (data||[]).filter(t => t.perlu_sync && !t.is_simulasi);
+  const panel = document.getElementById('panel-kemaskini');
+  if (perluKemaskini.length > 0) {
+    document.getElementById('kemaskini-count').textContent = perluKemaskini.length;
+    document.getElementById('kemaskini-list').innerHTML = perluKemaskini.map(t => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--white);border-radius:8px;padding:8px 12px;border:1px solid var(--amber)">
+        <div>
+          <span style="font-weight:700;font-size:13px">${t.kelas}</span>
+          <span style="font-size:12px;color:var(--sub);margin-left:8px">${kodJenis(t.jenis_pentaksiran)} · ${t.tahun}</span>
+        </div>
+        <button class="btn-primary" style="font-size:12px;padding:5px 14px" onclick="bukaModalKemaskini('${t.id}','${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">
+          🔄 Kemaskini
+        </button>
+      </div>`).join('');
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
   const list=data||[];
   document.getElementById('tapak-count').textContent=list.length+' tapak';
 
@@ -371,7 +459,7 @@ async function muatTapak(){
         <td><span class="sp sp-ok">✓ Aktif</span></td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           ${t.url_edit&&t.url_edit!=='#'?`<a href="${t.url_edit}" target="_blank" class="btn-ghost" style="font-size:11.5px;padding:5px 10px;text-decoration:none">📝 Buka</a>`:''}
-          <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px;background:var(--indigo-l);color:var(--indigo);border-color:var(--indigo-m)" onclick="bukaSyncModal('${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">🔄 Sync</button>
+          <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px;background:var(--indigo-l);color:var(--indigo);border-color:var(--indigo-m)" onclick="bukaModalKemaskini('${t.id}','${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">🔄 Kemaskini</button>
           <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px" onclick="bukaEditTapak(${t.id},'${(t.kelas||'').replace(/'/g,"\\'")}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">✏️ Edit</button>
           <button class="btn-danger" style="font-size:11.5px;padding:5px 10px" onclick="padamTapak(${t.id},'${(t.kelas||'').replace(/'/g,"\\'")}')">🗑</button>
         </td>
@@ -426,6 +514,12 @@ async function simpanProfil(){
   document.getElementById('p-kod-sekolah').textContent=kodSkl;
   tutupModal();tunjukToast('✅ Profil dikemaskini.','success');
 }
+async function bukaModalJana(){
+  bukaModal('modal-jana');
+  const ting = document.getElementById('j-ting').value;
+  if(ting) await muatKelasDropdown(ting);
+}
+
 async function muatKelasDropdown(ting){
   const sel=document.getElementById('j-kelas');
   sel.innerHTML='<option value="">— Pilih Kelas —</option>';
@@ -454,6 +548,15 @@ async function doJana(){
   document.getElementById('jana-err').style.display='none';
   document.getElementById('btn-jana').disabled=true;
   document.getElementById('btn-jana').textContent='⏳ Jana tapak...';
+  document.getElementById('jana-progress').style.display='block';
+  document.getElementById('jana-progress-bar').style.width='0%';
+  document.getElementById('jana-progress-label').textContent='Menyediakan tapak...';
+  let pct=0;
+  const progInterval=setInterval(()=>{
+    if(pct<85){ pct+=Math.random()*8; document.getElementById('jana-progress-bar').style.width=Math.min(pct,85)+'%'; }
+    const steps=['Menyediakan tapak...','Menyalin template...','Mengisi senarai murid...','Menetapkan soalan SP...','Hampir selesai...'];
+    document.getElementById('jana-progress-label').textContent=steps[Math.min(Math.floor(pct/20),4)];
+  },600);
   try {
     const params=new URLSearchParams({
       action:'jana',
@@ -469,10 +572,15 @@ async function doJana(){
     const res=await fetch(GAS_URL+'?'+params.toString());
     const hasil=await res.json();
     if(!hasil.ok){
+      clearInterval(progInterval);
+      document.getElementById('jana-progress').style.display='none';
       document.getElementById('jana-err').style.display='flex';
       document.getElementById('jana-err').textContent='❌ '+hasil.mesej;
       return;
     }
+    clearInterval(progInterval);
+    document.getElementById('jana-progress-bar').style.width='100%';
+    document.getElementById('jana-progress-label').textContent='Tapak berjaya dijana!';
     const{error}=await db.from('template_log').insert({
       id_pengguna:STATE.id, kod_sekolah:STATE.kodSekolah,
       kelas:kelas, tingkatan:ting, jenis_pentaksiran:jenis, tahun:tahun,
@@ -490,17 +598,12 @@ async function doJana(){
   } finally {
     document.getElementById('btn-jana').disabled=false;
     document.getElementById('btn-jana').textContent='Jana →';
+    document.getElementById('jana-progress').style.display='none';
   }
 }
 
-function bukaSyncModal(id,kelas,jenis,ting,tahun){
-  _syncId=id;
-  _syncMeta={kelas:kelas,jenis:jenis,ting:ting||'',tahun:tahun||'2026'};
-  document.getElementById('sync-kelas').textContent='Kelas '+kelas;
-  document.getElementById('sync-jenis').textContent=jenis;
-  document.getElementById('sync-body').style.display='block';
-  document.getElementById('sync-foot').innerHTML='<button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" onclick="doSync()">🔄 Sync Sekarang</button>';
-  bukaModal('modal-sync');
+function bukaSyncModal(ssId,kelas,jenis,ting,tahun){
+  bukaModalKemaskini('',ssId,kelas,jenis,ting,tahun);
 }
 function bukaEditTapak(id,kelas,jenis,ting,tahun){
   document.getElementById('edit-tapak-id').value=id;
@@ -522,10 +625,17 @@ async function simpanEditTapak(){
 }
 
 async function padamTapak(id,kelas){
-  if(!confirm('Padam tapak '+kelas+'? Data dalam Supabase tidak akan terpadam.')) return;
-  const{error}=await db.from('template_log').update({status:'PADAM'}).eq('id',id);
-  if(error){tunjukToast('❌ '+error.message,'error');return;}
-  tunjukToast('✅ Tapak dipadam.','success');muatTapak();
+  bukaKonfirm(
+    '🗑 Padam Tapak',
+    'Adakah anda pasti mahu memadam tapak kelas '+kelas+'?',
+    'Rekod markah murid dalam pangkalan data JPN tidak akan terpadam.',
+    'Ya, Padam','danger',
+    async()=>{
+      const{error}=await db.from('template_log').update({status:'PADAM'}).eq('id',id);
+      if(error){tunjukToast('❌ '+error.message,'error');return;}
+      tunjukToast('✅ Tapak dipadam.','success');muatTapak();
+    }
+  );
 }
 async function doSync(){
   if(!_syncId||_syncId.startsWith('PENDING_')){
@@ -571,10 +681,17 @@ async function doSync(){
 }
 
 async function muatAnalisis(){
-  const params={
-    tingkatan:        document.getElementById('af-ting').value,
-    jenisPentaksiran: document.getElementById('af-jenis').value,
-    tahun:            document.getElementById('af-tahun').value
+  const tingkatan=document.getElementById('af-ting').value;
+  const jenisPentaksiran=document.getElementById('af-jenis').value;
+  const tahun=document.getElementById('af-tahun').value;
+  const params={tingkatan,jenisPentaksiran,tahun,sekolah:STATE.kodSekolah};
+  window._cetakParams={
+    tingkatan,
+    jenisPentaksiran:jenisPentaksiran||'Semua',
+    tahun,
+    ppd:'',
+    sekolah:'',
+    kelas:''
   };
   await muatAnalisisSupa(params,'SEKOLAH','analisis-result');
 }
@@ -637,9 +754,53 @@ var _smTing  = '';
 var _smKelas = '';
 var _smTahun = '2026';
 
+var _konfirmCb = null;
+function bukaKonfirm(tajuk, mesej, notis, labelBtn, klasBtn, cb){
+  _konfirmCb = cb;
+  document.getElementById('konfirm-tajuk').textContent = tajuk;
+  document.getElementById('konfirm-mesej').textContent = mesej;
+  const notisEl = document.getElementById('konfirm-notis');
+  if(notis){
+    notisEl.style.display='block';
+    notisEl.innerHTML='<div class="alert alert-warn">⚠️ '+notis+'</div>';
+  } else {
+    notisEl.style.display='none';
+  }
+  const btn = document.getElementById('konfirm-btn');
+  btn.textContent = labelBtn||'Sahkan';
+  btn.className = 'btn-'+(klasBtn||'danger');
+  bukaModal('modal-konfirm');
+}
+function _konfirmExec(){
+  tutupModal();
+  if(_konfirmCb) _konfirmCb();
+  _konfirmCb = null;
+}
+
+async function padamKelas(ting,kelas){
+  bukaKonfirm(
+    '🗑 Padam Kelas',
+    'Adakah anda pasti mahu memadam kelas '+kelas+'?',
+    'Senarai murid kelas ini akan dipadam. Tapak analisis yang telah dijana TIDAK akan terpadam.',
+    'Ya, Padam','danger',
+    async()=>{
+      const{error}=await db.from('senarai_murid').delete().eq('kod_sekolah',STATE.kodSekolah).eq('tingkatan',ting).eq('kelas',kelas);
+      if(error){tunjukToast('❌ '+error.message,'error');return;}
+      tunjukToast('✅ Kelas '+kelas+' dipadam.','success');
+      await Promise.all([muatListKelas(),muatStat()]);
+    }
+  );
+}
+
+function resetViewMurid(){
+  document.getElementById('sm-view-list').style.display='block';
+  document.getElementById('sm-view-edit').style.display='none';
+  muatListKelas();
+}
+
 async function muatListKelas(){
   const{data}=await db.from('senarai_murid')
-    .select('tingkatan,kelas')
+    .select('tingkatan,kelas,tahun')
     .eq('kod_sekolah',STATE.kodSekolah)
     .order('tingkatan').order('kelas');
   const el=document.getElementById('sm-list-kelas');
@@ -656,11 +817,11 @@ async function muatListKelas(){
       <div class="card-body" style="padding:0">
         <table class="data-table">
           <thead><tr><th>Tingkatan</th><th>Kelas</th><th>Tahun</th><th>Tindakan</th></tr></thead>
-          <tbody>${kelas.map(k=>`<tr style="cursor:pointer" onclick="bukaMuridKelas('${k.tingkatan}','${k.kelas}')">
+          <tbody>${kelas.map(k=>`<tr style="cursor:pointer" onclick="bukaMuridKelas('${k.tingkatan}','${k.kelas}','${k.tahun||'2026'}')">
             <td><span class="chip chip-em">T${k.tingkatan}</span></td>
             <td style="font-weight:700">${k.kelas}</td>
             <td style="font-family:var(--ffm);font-weight:700">${k.tahun||'—'}</td>
-            <td><button class="btn-ghost" style="font-size:12px;padding:4px 12px" onclick="event.stopPropagation();bukaMuridKelas('${k.tingkatan}','${k.kelas}')">✏️ Edit Murid</button></td>
+            <td style="display:flex;gap:6px"><button class="btn-ghost" style="font-size:12px;padding:4px 12px" onclick="event.stopPropagation();bukaMuridKelas('${k.tingkatan}','${k.kelas}','${k.tahun||'2026'}')">✏️ Edit Murid</button><button class="btn-danger" style="font-size:12px;padding:4px 10px" onclick="event.stopPropagation();padamKelas('${k.tingkatan}','${k.kelas}')">🗑 Padam</button></td>
           </tr>`).join('')}
           </tbody>
         </table>
@@ -678,12 +839,13 @@ function paparFormCari(){
   _smMurid=[];_smTing='';_smKelas='';
 }
 
-function bukaMuridKelas(ting,kelas){
+function bukaMuridKelas(ting,kelas,tahun){
   document.getElementById('sm-view-list').style.display='none';
   document.getElementById('sm-view-edit').style.display='block';
   document.getElementById('btn-tambah-kelas').style.display='none';
   document.getElementById('sm-ting').value=ting;
   document.getElementById('sm-kelas').value=kelas;
+  if(tahun) document.getElementById('sm-tahun').value=tahun;
   cariMurid();
 }
 

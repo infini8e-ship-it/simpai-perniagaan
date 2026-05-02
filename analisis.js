@@ -414,6 +414,7 @@ function _renderAnalisis(d, params, peranan) {
     (d.analisisKelas.length>1 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-kelas\')">🏫 Analisis Kelas</button>' : '') +
     (d.ranking.length>0 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-ranking\')">🏆 Ranking Sekolah</button>' : '') +
     '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-gp\')">📈 GP & Gred SPM</button>' +
+    (d.muridBerisiko.length>0 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-berisiko\')">⚠️ Murid Berisiko</button>' : '') +
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">' +
     '<button class="btn-ghost" onclick="cetakAnalisis(\'Analisis SIMP-Ai\')">🖨️ Cetak</button>' +
@@ -845,17 +846,37 @@ function cetakAnalisis(tajuk) {
   else if(STATE.peranan==='PPD'||STATE.peranan==='JU_DAERAH') orgInfo='<strong>'+(STATE.ppd||'').toUpperCase()+'</strong>';
   else orgInfo='<strong>JABATAN PENDIDIKAN NEGERI KEDAH</strong>';
 
+  // Bina baris maklumat tapisan
+  var p=window._cetakParams||{};
+  var tapisanBaris=[];
+  tapisanBaris.push('Tingkatan: '+(p.tingkatan?'Tingkatan '+p.tingkatan:'Semua'));
+  tapisanBaris.push('Pentaksiran: '+(p.jenisPentaksiran&&p.jenisPentaksiran!=='Semua'?p.jenisPentaksiran:'Semua'));
+  tapisanBaris.push('Tahun: '+(p.tahun||'Semua'));
+  if(STATE.peranan==='JPN'){
+    if(p.ppd) tapisanBaris.push('PPD: '+p.ppd);
+    else tapisanBaris.push('PPD: Semua PPD');
+    if(p.sekolah) tapisanBaris.push('Sekolah: '+p.sekolah);
+  }
+  if(STATE.peranan==='PPD'||STATE.peranan==='JU_DAERAH'){
+    tapisanBaris.push('Sekolah: '+(p.sekolah||'Semua Sekolah'));
+  }
+  if(p.kelas) tapisanBaris.push('Kelas: '+p.kelas);
+  var tapisanHtml='<div style="font-size:10.5px;color:#444;margin-top:4px">'+tapisanBaris.join(' &nbsp;|&nbsp; ')+'</div>';
+
   // Ambil tab aktif sahaja
   var tabAktif = document.querySelector('.ana-content[style*="block"]') || document.querySelector('.ana-content:not([style*="none"])');
   var namaTab = '';
   var btnAktif = document.querySelector('.ana-tab.active');
   if (btnAktif) namaTab = btnAktif.textContent.trim();
 
+  
+
   var headerHtml='<div style="padding:10px 0 14px;border-bottom:3px solid #1a3c5e;margin-bottom:14px">'+
     '<table style="width:100%;border:none"><tr>'+
       '<td style="border:none"><div style="font-size:15px;font-weight:700;color:#1a3c5e;text-transform:uppercase">Sistem Analisis Item Perniagaan — JPN Kedah</div>'+
         '<div style="font-size:12px;color:#333;margin-top:3px">Tab: <strong>'+namaTab+'</strong></div>'+
-        '<div style="font-size:11px;color:#555;margin-top:2px">'+orgInfo+'</div></td>'+
+        '<div style="font-size:11px;color:#555;margin-top:2px">'+orgInfo+'</div>'+
+        tapisanHtml+'</td>'+
       '<td style="border:none;text-align:right;vertical-align:top;white-space:nowrap">'+
         '<div style="font-size:10px;color:#888">Dicetak: '+new Date().toLocaleString('ms-MY')+'</div>'+
         '<div style="font-size:10px;color:#888">Pengguna: '+STATE.nama+'</div></td>'+

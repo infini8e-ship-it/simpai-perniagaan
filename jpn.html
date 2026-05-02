@@ -112,8 +112,16 @@
           <select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2025">2025</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">PPD (optional)</label>
-          <select class="form-select" id="af-ppd"><option value="">Semua Daerah</option></select>
+          <label class="form-label">PPD (pilihan)</label>
+          <select class="form-select" id="af-ppd" onchange="muatSekolahAnalisis()"><option value="">Semua Daerah</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sekolah (pilihan)</label>
+          <select class="form-select" id="af-sekolah"><option value="">Semua Sekolah</option></select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="af-cari-sekolah" placeholder="Taip kod atau nama sekolah untuk tapis dropdown sekolah di atas..." oninput="cariSekolahAnalisis()">
         </div>
       </div>
       <div style="margin-top:14px"><button class="btn-primary" onclick="muatAnalisis()">🔍 Papar Analisis</button></div>
@@ -323,6 +331,53 @@
   </div>
 </div>
 </main>
+
+<!-- MODAL EDIT SEKOLAH -->
+<div class="modal-overlay" id="modal-edit-sekolah">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-head"><div class="modal-title">✏️ Edit Sekolah</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-skl-id">
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Kod Sekolah</label><input class="form-input" id="edit-skl-kod" placeholder="Contoh: KEA1001"></div>
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nama Sekolah</label><input class="form-input" id="edit-skl-nama" placeholder="Nama penuh sekolah"></div>
+      <div class="form-group"><label class="form-label">PPD</label><select class="form-select" id="edit-skl-ppd"></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button class="btn-primary" onclick="simpanEditSekolah()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="modal-overlay" id="modal-tambah-sekolah">
@@ -509,6 +564,21 @@
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
+var _konfirmCb=null;
+function bukaKonfirm(tajuk,mesej,notis,labelBtn,klasBtn,cb){
+  _konfirmCb=cb;
+  document.getElementById('konfirm-tajuk').textContent=tajuk;
+  document.getElementById('konfirm-mesej').textContent=mesej;
+  const notisEl=document.getElementById('konfirm-notis');
+  if(notis){notisEl.style.display='block';notisEl.innerHTML='<div class="alert alert-warn">⚠️ '+notis+'</div>';}
+  else{notisEl.style.display='none';}
+  const btn=document.getElementById('konfirm-btn');
+  btn.textContent=labelBtn||'Sahkan';
+  btn.className='btn-'+(klasBtn||'danger');
+  bukaModal('modal-konfirm');
+}
+function _konfirmExec(){tutupModal();if(_konfirmCb)_konfirmCb();_konfirmCb=null;}
+
 var _sekolahAll=[], _ppdAll=[];
 var _skpspSemua = []; // Menyimpan semua SP untuk dropdown K1 & K2
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
@@ -567,6 +637,32 @@ async function muatLogAktiviti(){
     </div>`).join('');
 }
 
+function bukaEditSekolah(id,kod,nama,kodPpd){
+  document.getElementById('edit-skl-id').value=id;
+  document.getElementById('edit-skl-kod').value=kod;
+  document.getElementById('edit-skl-nama').value=nama;
+  const opts=_ppdAll.map(p=>`<option value="${p.kod_ppd}" ${p.kod_ppd===kodPpd?'selected':''}>${p.nama_ppd}</option>`).join('');
+  document.getElementById('edit-skl-ppd').innerHTML=opts;
+  bukaModal('modal-edit-sekolah');
+}
+async function simpanEditSekolah(){
+  const id=document.getElementById('edit-skl-id').value;
+  const kod=document.getElementById('edit-skl-kod').value.trim().toUpperCase();
+  const nama=document.getElementById('edit-skl-nama').value.trim().toUpperCase();
+  const ppd=document.getElementById('edit-skl-ppd').value;
+  if(!kod||!nama||!ppd){tunjukToast('⚠️ Sila isi semua maklumat.','warn');return;}
+  const{error}=await db.from('sekolah').update({kod_sekolah:kod,nama_sekolah:nama,kod_ppd:ppd}).eq('id',id);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ Sekolah dikemaskini.','success');muatSekolah();
+}
+async function padamSekolah(id,nama){
+  bukaKonfirm('Padam Sekolah','Padam sekolah '+nama+'?','Semua pengguna sekolah ini mungkin terjejas.','Ya, Padam','danger',async()=>{
+    const{error}=await db.from('sekolah').delete().eq('id',id);
+    if(error){tunjukToast('❌ '+error.message,'error');return;}
+    tunjukToast('✅ Sekolah dipadam.','success');muatSekolah();
+  });
+}
+
 async function muatSekolah(){
   const ppd=document.getElementById('filter-ppd')?.value||'';
   let q=db.from('sekolah').select('*').order('nama_sekolah');
@@ -576,12 +672,16 @@ async function muatSekolah(){
   document.getElementById('skl-count').textContent=_sekolahAll.length+' sekolah';
   document.getElementById('sekolah-body').innerHTML=`
     <table class="data-table">
-      <thead><tr><th>Kod</th><th>Nama Sekolah</th><th>PPD</th><th>Status</th></tr></thead>
+      <thead><tr><th>Kod</th><th>Nama Sekolah</th><th>PPD</th><th>Status</th><th>Tindakan</th></tr></thead>
       <tbody>${_sekolahAll.map(s=>`<tr>
         <td style="font-family:var(--ffm);font-weight:700">${s.kod_sekolah}</td>
         <td style="font-weight:600">${s.nama_sekolah}</td>
         <td style="font-size:12px;color:var(--sub)">${(s.kod_ppd||'').replace('PPD_','PPD ').replace(/_/g,' ')}</td>
         <td><span class="sp ${s.status==='AKTIF'?'sp-ok':'sp-err'}">${s.status}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-ghost" style="font-size:11.5px;padding:4px 10px" onclick="bukaEditSekolah('${s.id}','${s.kod_sekolah}','${(s.nama_sekolah||'').replace(/'/g,"\\'")}','${s.kod_ppd}')">✏️ Edit</button>
+          <button class="btn-danger" style="font-size:11.5px;padding:4px 10px" onclick="padamSekolah('${s.id}','${s.nama_sekolah}')">🗑</button>
+        </td>
       </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -590,11 +690,14 @@ async function muatPPDList(){
   const{data}=await db.from('ppd').select('*').order('nama_ppd');
   _ppdAll=data||[];
   const opts=_ppdAll.map(p=>`<option value="${p.kod_ppd}">${p.nama_ppd}</option>`).join('');
-  ['filter-ppd','skl-ppd','usr-ppd-sel','af-ppd'].forEach(id=>{
+  const optsNama=_ppdAll.map(p=>`<option value="${p.nama_ppd}">${p.nama_ppd}</option>`).join('');
+  ['filter-ppd','skl-ppd','usr-ppd-sel'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
-    const prefix=id==='filter-ppd'||id==='af-ppd'?'<option value="">Semua Daerah</option>':'';
+    const prefix=id==='filter-ppd'?'<option value="">Semua Daerah</option>':'';
     el.innerHTML=prefix+opts;
   });
+  const afPpd=document.getElementById('af-ppd');
+  if(afPpd) afPpd.innerHTML='<option value="">Semua Daerah</option>'+optsNama;
   const sOpts=_sekolahAll.map(s=>`<option value="${s.kod_sekolah}">${s.nama_sekolah}</option>`).join('');
   const usrSkl=document.getElementById('usr-sekolah');
   if(usrSkl) usrSkl.innerHTML=sOpts;
@@ -646,9 +749,10 @@ async function simpanPengguna(){
 }
 
 async function padamPengguna(id){
-  if(!confirm('Nonaktifkan pengguna '+id+'?')) return;
-  await db.from('pengguna').update({status:'TIDAK AKTIF'}).eq('id',id);
-  tunjukToast('✅ Pengguna dinonaktifkan.','success');muatPengguna();
+  bukaKonfirm('Nyahaktifkan Pengguna','Adakah anda pasti mahu nyahaktifkan pengguna '+id+'?',null,'Ya, Nyahaktifkan','danger',async()=>{
+    await db.from('pengguna').update({status:'TIDAK AKTIF'}).eq('id',id);
+    tunjukToast('✅ Pengguna dinyahaktifkan.','success');muatPengguna();
+  });
 }
 
 async function simpanSekolah(){
@@ -674,13 +778,50 @@ async function muatTetapan(){
     </table>`;
 }
 
+async function muatSekolahAnalisis(){
+  const ppd=document.getElementById('af-ppd').value;
+  const sel=document.getElementById('af-sekolah');
+  sel.innerHTML='<option value="">Semua Sekolah</option>';
+  document.getElementById('af-cari-sekolah').value='';
+  let senarai=_sekolahAll;
+  if(ppd) senarai=senarai.filter(s=>{
+    const ppdObj=_ppdAll.find(p=>p.nama_ppd===ppd);
+    return ppdObj&&s.kod_ppd===ppdObj.kod_ppd;
+  });
+  senarai.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`;
+  });
+}
+function cariSekolahAnalisis(){
+  const cari=(document.getElementById('af-cari-sekolah').value||'').toLowerCase();
+  const ppd=document.getElementById('af-ppd').value;
+  const sel=document.getElementById('af-sekolah');
+  sel.innerHTML='<option value="">Semua Sekolah</option>';
+  let senarai=_sekolahAll;
+  if(ppd){ const ppdObj=_ppdAll.find(p=>p.nama_ppd===ppd); if(ppdObj) senarai=senarai.filter(s=>s.kod_ppd===ppdObj.kod_ppd); }
+  if(cari) senarai=senarai.filter(s=>s.kod_sekolah.toLowerCase().includes(cari)||s.nama_sekolah.toLowerCase().includes(cari));
+  senarai.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`;
+  });
+}
 async function muatAnalisis(){
-  const params={
-    tingkatan:        document.getElementById('af-ting').value,
-    jenisPentaksiran: document.getElementById('af-jenis').value,
-    tahun:            document.getElementById('af-tahun').value,
-    ppd:              document.getElementById('af-ppd').value
+  const ppdVal=document.getElementById('af-ppd').value;
+  const sklVal=document.getElementById('af-sekolah').value;
+  const ppdNama=document.getElementById('af-ppd').options[document.getElementById('af-ppd').selectedIndex]?.text||'';
+  const sklNama=document.getElementById('af-sekolah').options[document.getElementById('af-sekolah').selectedIndex]?.text||'';
+  const jenisPentaksiran=document.getElementById('af-jenis').value;
+  const tingkatan=document.getElementById('af-ting').value;
+  const tahun=document.getElementById('af-tahun').value;
+  const params={tingkatan, jenisPentaksiran, tahun, ppd:ppdVal, sekolah:sklVal};
+  window._cetakParams={
+    tingkatan,
+    jenisPentaksiran: jenisPentaksiran||'Semua',
+    tahun,
+    ppd: ppdVal ? ppdNama : '',
+    sekolah: sklVal ? sklNama : ''
   };
+  const subTitle = sklVal ? sklNama : ppdVal ? ppdNama : 'Semua Sekolah — Negeri Kedah';
+  document.querySelector('#page-analisis .sec-sub').textContent = subTitle;
   await muatAnalisisSupa(params,'JPN','analisis-result');
 }
 
@@ -726,7 +867,7 @@ async function doSimulasi(){
   const ting   = document.getElementById('sim-ting').value;
   const bil    = parseInt(document.getElementById('sim-bil').value)||5;
   if(!kodSkl||!jenis){tunjukToast('⚠️ Sila pilih sekolah dan jenis pentaksiran.','warn');return;}
-  if(!confirm('Jana '+bil+' tapak simulasi untuk '+namaSkl+'? Proses ini mengambil masa ~'+Math.ceil(bil*8/60)+' minit.')) return;
+  bukaKonfirm('Jana Tapak Simulasi','Jana '+bil+' tapak simulasi untuk '+namaSkl+'?','Proses ini mengambil masa ~'+Math.ceil(bil*8/60)+' minit.','Ya, Jana','primary',async()=>{
 
   const{data:sklData}=await db.from('sekolah').select('kod_ppd').eq('kod_sekolah',kodSkl).single();
   const{data:ppdData}=await db.from('ppd').select('nama_ppd').eq('kod_ppd',sklData?.kod_ppd||'').single();
@@ -838,13 +979,14 @@ async function doSimulasi(){
     btn.disabled=false;
     btn.innerHTML='🧪 Jana Simulasi';
   }
+  });
 }
 
 async function doPadamSimulasi(){
   const kodSkl=document.getElementById('sim-padam-sekolah').value;
   const jenis=document.getElementById('sim-padam-jenis').value;
   if(!kodSkl){tunjukToast('⚠️ Sila pilih sekolah.','warn');return;}
-  if(!confirm('Padam SEMUA data simulasi untuk sekolah ini? Tindakan tidak boleh dibatalkan.')) return;
+  bukaKonfirm('Padam Data Simulasi','Padam SEMUA data simulasi untuk sekolah ini?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const btn=document.getElementById('btn-sim-padam');
   btn.disabled=true; btn.textContent='⏳ Memadam...';
   try{
@@ -868,6 +1010,7 @@ async function doPadamSimulasi(){
     btn.disabled=false;
     btn.textContent='🗑 Padam Simulasi';
   }
+  });
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
 
@@ -959,10 +1102,11 @@ async function kemasSKPSP(){
 async function padamSKPSP(){
   const id=document.getElementById('edit-skpsp-id').value;
   const kod=document.getElementById('edit-skpsp-kod').value;
-  if(!confirm('Padam SP '+kod+'? Tindakan ini tidak boleh dibatalkan.')) return;
+  bukaKonfirm('Padam SP','Padam SP '+kod+'?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const{error}=await db.from('skpsp').delete().eq('id',id);
   if(error){tunjukToast('❌ '+error.message,'error');return;}
   tutupModal();tunjukToast('✅ SP dipadam.','success');muatSKPSP();
+  });
 }
 
 async function muatTetapanK1(){
@@ -1355,12 +1499,13 @@ async function editGridK2(ting, jenis, tahun){
 }
 
 async function padamSetK2(ting, jenis, tahun){
-  if(!confirm('Padam semua tetapan K2 untuk T'+ting+' '+kodJenis(jenis)+' '+tahun+'?')) return;
+  bukaKonfirm('Padam Tetapan K2','Padam semua tetapan K2 untuk T'+ting+' '+kodJenis(jenis)+' '+tahun+'?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const{error}=await db.from('tetapan_k2').delete()
     .eq('tingkatan',ting).eq('jenis_pentaksiran',jenis).eq('tahun',tahun);
   if(error){tunjukToast('❌ '+error.message,'error');return;}
   tunjukToast('✅ Set K2 dipadam.','success');
   muatTetapanK2();
+  });
 }
 
 async function simpanTetapanK2(){
@@ -1386,9 +1531,10 @@ async function simpanTetapanK2(){
 }
 
 async function padamK2(id){
-  if(!confirm('Padam soalan K2 ini?')) return;
+  bukaKonfirm('Padam Soalan K2','Adakah anda pasti mahu memadam soalan K2 ini?',null,'Ya, Padam','danger',async()=>{
   await db.from('tetapan_k2').delete().eq('id',id);
   tunjukToast('✅ Dipadam.','success');muatTetapanK2();
+  });
 }
 
 function janaGridK1() {
@@ -1526,7 +1672,7 @@ async function jalankanPushSP() {
   const tahun = document.getElementById('push-tahun').value;
   const jenis = document.getElementById('push-jenis').value;
   
-  if (!confirm(`Adakah anda pasti untuk PUSH SP terkini bagi ${jenis} (${tahun}) ke semua tapak guru? Proses ini mungkin mengambil masa beberapa minit bergantung kepada jumlah tapak.`)) return;
+  bukaKonfirm('Push SP ke Tapak Guru','Push SP terkini bagi '+kodJenis(jenis)+' ('+tahun+') ke semua tapak guru?','Proses ini mungkin mengambil masa beberapa minit. Semua tapak guru akan terjejas.','Ya, Push','primary',async()=>{
 
   const btn = document.getElementById('btn-push-sp');
   btn.disabled = true;
@@ -1557,6 +1703,7 @@ async function jalankanPushSP() {
     btn.disabled = false;
     btn.innerHTML = '🔄 Push Sekarang';
   }
+  });
 }
 
 </script>
