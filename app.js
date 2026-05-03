@@ -48,6 +48,74 @@ async function doLogout() {
   window.location.href = 'login.html';
 }
 
+// ── AUTO LOGOUT (IDLE 15 MINIT)
+(function() {
+  const IDLE_MS = 14 * 60 * 1000;   // 14 minit → tunjuk amaran
+  const WARN_MS = 60 * 1000;         // 1 minit → logout
+  let idleTimer, warnTimer;
+  let _warned = false;
+
+  function resetIdle() {
+    if (_warned) { tutupAmaran(); _warned = false; }
+    clearTimeout(idleTimer);
+    clearTimeout(warnTimer);
+    idleTimer = setTimeout(tunjukAmaran, IDLE_MS);
+  }
+
+  function tunjukAmaran() {
+    _warned = true;
+    // Cipta overlay jika tiada
+    if (!document.getElementById('idle-warn')) {
+      const div = document.createElement('div');
+      div.id = 'idle-warn';
+      div.innerHTML = `
+        <div id="idle-warn-box">
+          <div style="font-size:2rem">⏱️</div>
+          <div style="font-weight:700;margin:8px 0">Sesi hampir tamat</div>
+          <div id="idle-countdown" style="font-size:1.5rem;font-weight:700;color:var(--rose)">60</div>
+          <div style="font-size:13px;color:var(--muted);margin:4px 0 16px">saat lagi sebelum log keluar automatik</div>
+          <button onclick="window._idleKekal()" style="padding:10px 28px;background:var(--indigo);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">Teruskan Sesi</button>
+        </div>`;
+      div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center';
+      document.body.appendChild(div);
+    }
+    document.getElementById('idle-warn').style.display = 'flex';
+
+    // Kira detik
+    let sisa = 60;
+    document.getElementById('idle-countdown').textContent = sisa;
+    warnTimer = setInterval(() => {
+      sisa--;
+      const el = document.getElementById('idle-countdown');
+      if (el) el.textContent = sisa;
+      if (sisa <= 0) {
+        clearInterval(warnTimer);
+        doLogout();
+      }
+    }, 1000);
+  }
+
+  function tutupAmaran() {
+    clearInterval(warnTimer);
+    const el = document.getElementById('idle-warn');
+    if (el) el.style.display = 'none';
+  }
+
+  window._idleKekal = function() {
+    _warned = false;
+    tutupAmaran();
+    resetIdle();
+  };
+
+  // Mulakan timer selepas halaman load
+  window.addEventListener('load', () => {
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(ev =>
+      document.addEventListener(ev, resetIdle, { passive: true })
+    );
+    resetIdle();
+  });
+})();
+
 // ── LOG AKTIVITI
 async function logAktiviti(tindakan, butiran) {
   try {
