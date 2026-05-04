@@ -15,6 +15,7 @@
     <button class="nav-tab" onclick="setTab(this,'pengguna')">👥 Pengguna</button>
     <button class="nav-tab" onclick="setTab(this,'analisis')">🔬 Analisis Daerah</button>
     <button class="nav-tab" onclick="setTab(this,'ranking')">📊 Prestasi Daerah</button>
+    <button class="nav-tab" onclick="setTab(this,'prestasi-spm');muatPrestasiPPD()">🏆 Sejarah Prestasi</button>
   </div>
   <div class="nav-right">
     <span class="nav-badge nb-ppd" id="nav-badge">PPD</span>
@@ -62,6 +63,11 @@
 <!-- ANALISIS DAERAH -->
 <div class="page" id="page-analisis">
   <div class="sec-hd"><div><div class="sec-title">Analisis Daerah 🔬</div></div></div>
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <button class="sub-tab active" id="ppd-stab-item" onclick="setPPDSubTab('item')">🔬 Analisis Item</button>
+    <button class="sub-tab" id="ppd-stab-prestasi" onclick="setPPDSubTab('prestasi')">🏆 Sejarah Prestasi</button>
+  </div>
+  <div id="ppd-sub-item">
   <div class="card" style="margin-bottom:16px">
     <div class="card-body">
       <div class="form-grid form-grid-3">
@@ -83,6 +89,11 @@
     </div>
   </div>
   <div id="analisis-result"><div class="empty-state card" style="padding:40px"><div class="ico">🔬</div><p>Pilih parameter dan klik Papar.</p></div></div>
+  </div><!-- /ppd-sub-item -->
+
+  <div id="ppd-sub-prestasi" style="display:none">
+    <div id="ppd-prestasi-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
 </div>
 
 <!-- PRESTASI DAERAH -->
@@ -124,6 +135,34 @@
   </div>
   <div id="prestasi-result"><div class="empty-state card" style="padding:40px"><div class="ico">📊</div><p>Pilih parameter dan klik Papar Prestasi.</p></div></div>
 </div>
+<!-- SEJARAH PRESTASI SPM -->
+<div class="page" id="page-prestasi-spm">
+  <div class="sec-hd">
+    <div><div class="sec-title">Sejarah Prestasi SPM 🏆</div><div class="sec-sub" id="ppd-prestasi-sub">Pencapaian SPM Perniagaan</div></div>
+    <button class="btn-ghost" onclick="muatPrestasiPPD(true)">🔄 Muat Semula</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="spm-jenis">
+            <option value="">Semua</option>
+            <option value="PSPM">PSPM</option>
+            <option value="PASA">PASA</option>
+            <option value="PPSA">PPSA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="spm-cari" placeholder="Taip nama sekolah..." oninput="tapis_spm_ppd()">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="ppd-spm-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+</div>
+
 </main>
 <div class="toast" id="toast"></div>
 
@@ -386,6 +425,58 @@ async function muatPrestasi(){
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
+// ── SUB TAB PPD
+function setPPDSubTab(nama) {
+  document.getElementById('ppd-sub-item').style.display = nama === 'item' ? '' : 'none';
+  document.getElementById('ppd-sub-prestasi').style.display = nama === 'prestasi' ? '' : 'none';
+  document.getElementById('ppd-stab-item').classList.toggle('active', nama === 'item');
+  document.getElementById('ppd-stab-prestasi').classList.toggle('active', nama === 'prestasi');
+  if (nama === 'prestasi') muatPrestasiPPD();
+}
+
+// ── MUAT SEJARAH PRESTASI PPD
+var _rawSpmPPD = [];
+async function muatPrestasiPPD(forceRefresh = false) {
+  const elBody = document.getElementById('ppd-prestasi-body') || document.getElementById('ppd-spm-result');
+  if (!elBody) return;
+  elBody.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div><p style="margin-top:8px;color:var(--muted);font-size:13px">Memuatkan data SPM...</p></div>';
+
+  if (forceRefresh) localStorage.removeItem('simp_spm_cache');
+  const semua = await muatDataSPM();
+
+  _rawSpmPPD = semua.filter(r =>
+    r['mata pelajaran'] === 'PERNIAGAAN' &&
+    r['ppd'] === STATE.ppd
+  );
+
+  const subEl = document.getElementById('ppd-prestasi-sub');
+  if (subEl) subEl.textContent = `Pencapaian SPM Perniagaan — ${STATE.ppd || '—'}`;
+
+  _renderSpmPPD();
+}
+
+function tapis_spm_ppd() {
+  _renderSpmPPD();
+}
+
+function _renderSpmPPD() {
+  const elBody = document.getElementById('ppd-prestasi-body') || document.getElementById('ppd-spm-result');
+  if (!elBody) return;
+  const jenis = (document.getElementById('spm-jenis') || {}).value || '';
+  const cari = ((document.getElementById('spm-cari') || {}).value || '').toLowerCase();
+
+  let data = _rawSpmPPD;
+  if (jenis) data = data.filter(r => r['jenis pentaksiran'].includes(jenis));
+  if (cari) data = data.filter(r => (r['nama sekolah'] || '').toLowerCase().includes(cari));
+
+  if (!data.length) {
+    elBody.innerHTML = '<div class="empty-state card" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
+    return;
+  }
+  elBody.innerHTML = '<div id="spm-table-ppd"></div>';
+  renderJadualSPM(data, 'spm-table-ppd');
+}
+
 </script>
 </body>
 </html>

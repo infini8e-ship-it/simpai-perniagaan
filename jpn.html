@@ -16,6 +16,7 @@
     <button class="nav-tab" onclick="setTab(this,'analisis')">🔬 Analisis Negeri</button>
     <button class="nav-tab" onclick="setTab(this,'tetapan')">⚙️ Tetapan SP</button>
     <button class="nav-tab" onclick="setTab(this,'simulasi')">🧪 Simulasi</button>
+    <button class="nav-tab" onclick="setTab(this,'prestasi-spm-jpn')">🏆 Sejarah Prestasi</button>
   </div>
   <div class="nav-right">
     <span class="nav-badge nb-jpn" id="nav-badge">JPN KEDAH</span>
@@ -91,6 +92,11 @@
   <div class="sec-hd">
     <div><div class="sec-title">Analisis Negeri 🔬</div><div class="sec-sub">Prestasi murid peringkat negeri</div></div>
   </div>
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <button class="sub-tab active" id="jpn-stab-item" onclick="setJPNSubTab('item')">🔬 Analisis Item</button>
+    <button class="sub-tab" id="jpn-stab-prestasi" onclick="setJPNSubTab('prestasi')">🏆 Sejarah Prestasi</button>
+  </div>
+  <div id="jpn-sub-item">
   <div class="card" style="margin-bottom:16px">
     <div class="card-body">
       <div class="form-grid form-grid-3">
@@ -128,6 +134,10 @@
     </div>
   </div>
   <div id="analisis-result"><div class="empty-state card" style="padding:40px"><div class="ico">🔬</div><p>Pilih parameter di atas dan klik Papar Analisis.</p></div></div>
+  </div><!-- /jpn-sub-item -->
+
+  <div id="jpn-sub-prestasi" style="display:none">
+  </div>
 </div>
 
 <div class="page" id="page-tetapan">
@@ -330,6 +340,104 @@
     <div class="card-body" style="padding:0" id="sim-rekod-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
   </div>
 </div>
+<!-- SEJARAH PRESTASI SPM JPN -->
+<div class="page" id="page-prestasi-spm-jpn">
+  <div class="sec-hd">
+    <div><div class="sec-title">Sejarah Prestasi SPM 🏆</div><div class="sec-sub">Pencapaian SPM Perniagaan — Peringkat Negeri</div></div>
+    
+  </div>
+
+  <!-- TAPISAN -->
+  <div class="card" style="margin-bottom:16px;overflow:visible">
+    <div class="card-body" style="overflow:visible">
+      <div class="form-grid form-grid-3" style="margin-bottom:12px;overflow:visible">
+        <div class="form-group">
+          <label class="form-label">PPD</label>
+          <select class="form-select" id="spm-jpn-ppd" onchange="spmJpnMuatSekolah()">
+            <option value="">Semua PPD</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sekolah</label>
+          <select class="form-select" id="spm-jpn-sekolah">
+            <option value="">Semua Sekolah</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pentaksiran</label>
+          <div class="dropdown-check" id="spm-jpn-pentaksiran-wrap">
+            <button class="dropdown-check-btn" onclick="toggleDropdownCheck('spm-jpn-ddc')">
+              <span id="spm-jpn-ddc-label">Semua Pentaksiran</span> ▾
+            </button>
+            <div class="dropdown-check-list" id="spm-jpn-ddc" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="tapis_spm_jpn()">🔍 Papar</button>
+        <button class="btn-ghost" onclick="resetTapisanSpmJpn()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KAD RINGKASAN -->
+  <div id="spm-jpn-kad" style="display:none;margin-bottom:16px">
+    <div class="stats-row stats-5">
+      <div class="stat-card sc-in"><div class="stat-val" id="k-duduki">—</div><div class="stat-lbl">Bil Duduki</div></div>
+      <div class="stat-card sc-em"><div class="stat-val" id="k-a">—</div><div class="stat-lbl">% A</div></div>
+      <div class="stat-card sc-cy"><div class="stat-val" id="k-kredit">—</div><div class="stat-lbl">% Kredit</div></div>
+      <div class="stat-card sc-am"><div class="stat-val" id="k-lulus">—</div><div class="stat-lbl">% Lulus</div></div>
+      <div class="stat-card sc-ro"><div class="stat-val" id="k-gpmp">—</div><div class="stat-lbl">GPMP</div></div>
+    </div>
+  </div>
+
+  <!-- CHART 1: PER PPD -->
+  <div class="card" id="spm-jpn-chart1-wrap" style="display:none;margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title">📊 Prestasi Per PPD</div>
+      <select class="form-select" id="spm-c1-metrik" style="width:140px" onchange="renderChart1()">
+        <option value="gpmp">GPMP</option>
+        <option value="%a">% A</option>
+        <option value="% kredit">% Kredit</option>
+        <option value="%lulus">% Lulus</option>
+        <option value="% gagal">% Gagal</option>
+      </select>
+    </div>
+    <div class="card-body"><canvas id="chart-ppd" height="100"></canvas></div>
+  </div>
+
+  <!-- CHART 2: PER SEKOLAH -->
+  <div class="card" id="spm-jpn-chart2-wrap" style="display:none;margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title">🏫 Prestasi Per Sekolah</div>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="spm-c2-sekolah" style="width:200px" onchange="renderChart2()">
+          <option value="">— Pilih Sekolah —</option>
+        </select>
+        <select class="form-select" id="spm-c2-metrik" style="width:140px" onchange="renderChart2()">
+          <option value="gpmp">GPMP</option>
+          <option value="%a">% A</option>
+          <option value="% kredit">% Kredit</option>
+          <option value="%lulus">% Lulus</option>
+          <option value="% gagal">% Gagal</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body"><canvas id="chart-sekolah" height="100"></canvas></div>
+  </div>
+
+  <!-- SENARAI SEKOLAH -->
+  <div class="card" id="spm-jpn-jadual-wrap">
+    <div class="card-head">
+      <div class="card-title">📋 Senarai Sekolah</div>
+      <button class="btn-primary" onclick="janaJadualSpmJpn()">🏫 Jana Prestasi Sekolah</button>
+    </div>
+    <div id="jpn-spm-result" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">
+      Klik "Jana Prestasi Sekolah" untuk papar senarai.
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- MODAL EDIT SEKOLAH -->
@@ -561,6 +669,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
@@ -1704,6 +1813,297 @@ async function jalankanPushSP() {
     btn.innerHTML = '🔄 Push Sekarang';
   }
   });
+}
+
+// ── SUB TAB JPN
+function setJPNSubTab(nama) {
+  document.getElementById('jpn-sub-item').style.display = nama === 'item' ? '' : 'none';
+  document.getElementById('jpn-sub-prestasi').style.display = nama === 'prestasi' ? '' : 'none';
+  document.getElementById('jpn-stab-item').classList.toggle('active', nama === 'item');
+  document.getElementById('jpn-stab-prestasi').classList.toggle('active', nama === 'prestasi');
+  if (nama === 'prestasi') {
+    // Redirect ke page Sejarah Prestasi (nav tab atas)
+    const btnPrestasi = document.querySelector('[onclick*="prestasi-spm-jpn"]');
+    if (btnPrestasi) btnPrestasi.click();
+  }
+}
+
+// ── DROPDOWN CHECKLIST
+function toggleDropdownCheck(id) {
+  const el = document.getElementById(id);
+  const buka = el.style.display === 'none' || el.style.display === '';
+  // Tutup semua
+  document.querySelectorAll('.dropdown-check-list').forEach(d => { d.style.display = 'none'; });
+  if (!buka) return;
+  const btn = document.querySelector(`[onclick*="${id}"]`);
+  const rect = btn.getBoundingClientRect();
+  // Pastikan sentiasa dalam body (bukan dalam card overflow:hidden)
+  if (el.parentNode !== document.body) document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.left = rect.left + 'px';
+  el.style.width = Math.max(rect.width, 240) + 'px';
+  el.style.zIndex = '999999';
+  const ddH = 240;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  el.style.top = (spaceBelow >= ddH || rect.top < ddH)
+    ? (rect.bottom + 4) + 'px'
+    : (rect.top - ddH - 4) + 'px';
+  el.style.display = 'block';
+  // Force ke hadapan — override semua stacking context
+  el.style.transform = 'translateZ(0)';
+  el.style.willChange = 'transform';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-check') && !e.target.closest('.dropdown-check-list')) {
+    document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+  }
+});
+window.addEventListener('scroll', (e) => {
+  // Abaikan (jangan tutup) jika pengguna sedang scroll di dalam kotak dropdown itu sendiri
+  if (e.target && e.target.closest && e.target.closest('.dropdown-check-list')) return; 
+  document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+}, true);
+
+function getCheckedPentaksiran() {
+  return [...document.querySelectorAll('#spm-jpn-ddc input:checked')].map(c => c.value);
+}
+
+function kemaskiniLabelDdc() {
+  const checked = getCheckedPentaksiran();
+  const el = document.getElementById('spm-jpn-ddc-label');
+  if (!el) return;
+  el.textContent = checked.length === 0 ? 'Semua Pentaksiran'
+    : checked.length === 1 ? checked[0]
+    : `${checked.length} dipilih`;
+}
+
+// ── CHART instances
+var _chartPPD = null, _chartSekolah = null;
+
+// ── DATA
+var _rawSpmJPN = [], _filteredSpmJPN = [];
+
+async function muatPrestasiJPN(forceRefresh = false) {
+  if (forceRefresh) localStorage.removeItem('simp_spm_cache');
+  const semua = await muatDataSPM();
+  _rawSpmJPN = semua.filter(r => r['mata pelajaran'] === 'PERNIAGAAN');
+
+  // Populate dropdown PPD
+  const ppdSet = [...new Set(_rawSpmJPN.map(r => r['ppd']).filter(Boolean))].sort();
+  const elPPD = document.getElementById('spm-jpn-ppd');
+  if (elPPD) elPPD.innerHTML = '<option value="">Semua PPD</option>' +
+    ppdSet.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  // Populate checklist pentaksiran
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+  const jpRaw = [...new Set(_rawSpmJPN.map(r => r['jenis pentaksiran']).filter(Boolean))];
+  const jpSet = jpRaw.sort((a,b) => {
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const elDDC = document.getElementById('spm-jpn-ddc');
+  if (elDDC) elDDC.innerHTML = jpSet.map(j => `
+    <label class="ddc-item">
+      <input type="checkbox" value="${j}" onchange="kemaskiniLabelDdc()"> ${j}
+    </label>`).join('');
+
+  // Reset sekolah chart 2
+  spmJpnMuatSekolah();
+}
+
+function spmJpnMuatSekolah() {
+  const ppd = (document.getElementById('spm-jpn-ppd') || {}).value || '';
+  const sekolahSet = [...new Set(
+    _rawSpmJPN.filter(r => !ppd || r['ppd'] === ppd).map(r => r['nama sekolah']).filter(Boolean)
+  )].sort();
+  const el = document.getElementById('spm-jpn-sekolah');
+  if (el) el.innerHTML = '<option value="">Semua Sekolah</option>' +
+    sekolahSet.map(s => `<option value="${s}">${s}</option>`).join('');
+  const elC2 = document.getElementById('spm-c2-sekolah');
+  if (elC2) elC2.innerHTML = '<option value="">— Pilih Sekolah —</option>' +
+    sekolahSet.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function resetTapisanSpmJpn() {
+  document.getElementById('spm-jpn-ppd').value = '';
+  document.getElementById('spm-jpn-sekolah').value = '';
+  document.querySelectorAll('#spm-jpn-ddc input').forEach(c => c.checked = false);
+  kemaskiniLabelDdc();
+  spmJpnMuatSekolah();
+  // Reset paparan
+  document.getElementById('spm-jpn-kad').style.display = 'none';
+  document.getElementById('spm-jpn-chart1-wrap').style.display = 'none';
+  document.getElementById('spm-jpn-chart2-wrap').style.display = 'none';
+  document.getElementById('jpn-spm-result').innerHTML = 'Klik "Jana Prestasi Sekolah" untuk papar senarai.';
+}
+
+function tapis_spm_jpn() {
+  const ppd = (document.getElementById('spm-jpn-ppd') || {}).value || '';
+  const skl = (document.getElementById('spm-jpn-sekolah') || {}).value || '';
+  const jpList = getCheckedPentaksiran();
+
+  _filteredSpmJPN = _rawSpmJPN.filter(r => {
+    if (ppd && r['ppd'] !== ppd) return false;
+    if (skl && r['nama sekolah'] !== skl) return false;
+    if (jpList.length && !jpList.includes(r['jenis pentaksiran'])) return false;
+    return true;
+  });
+
+  if (!_filteredSpmJPN.length) {
+    document.getElementById('spm-jpn-kad').style.display = 'none';
+    document.getElementById('spm-jpn-chart1-wrap').style.display = 'none';
+    document.getElementById('spm-jpn-chart2-wrap').style.display = 'none';
+    document.getElementById('jpn-spm-result').innerHTML = '<div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
+    return;
+  }
+
+  // Kad ringkasan
+  renderKadSpmJpn(_filteredSpmJPN);
+
+  // Chart 1
+  renderChart1();
+
+  // Chart 2
+  document.getElementById('spm-jpn-chart2-wrap').style.display = '';
+  renderChart2();
+
+  // Reset jadual
+  document.getElementById('jpn-spm-result').innerHTML = 'Klik "Jana Prestasi Sekolah" untuk papar senarai.';
+}
+
+function renderKadSpmJpn(data) {
+  const el = document.getElementById('spm-jpn-kad');
+  if (!el) return;
+  const jmlDuduki = data.reduce((s, r) => s + r['bil duduki'], 0);
+  const wA = data.reduce((s, r) => s + (r['%a'] * r['bil duduki']), 0);
+  const wK = data.reduce((s, r) => s + (r['% kredit'] * r['bil duduki']), 0);
+  const wL = data.reduce((s, r) => s + (r['%lulus'] * r['bil duduki']), 0);
+  const wG = data.reduce((s, r) => s + (r['gpmp'] * r['bil duduki']), 0);
+  const pA = jmlDuduki ? (wA / jmlDuduki).toFixed(2) : '—';
+  const pK = jmlDuduki ? (wK / jmlDuduki).toFixed(2) : '—';
+  const pL = jmlDuduki ? (wL / jmlDuduki).toFixed(2) : '—';
+  const gp = jmlDuduki ? (wG / jmlDuduki).toFixed(2) : '—';
+
+  document.getElementById('k-duduki').textContent = jmlDuduki;
+  document.getElementById('k-a').textContent = pA + '%';
+  document.getElementById('k-kredit').textContent = pK + '%';
+  document.getElementById('k-lulus').textContent = pL + '%';
+  document.getElementById('k-gpmp').textContent = gp;
+  el.style.display = '';
+}
+
+// ── WARNA PER PENTAKSIRAN
+const WARNA_JP = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+function warnaJP(list) {
+  return list.map((_, i) => WARNA_JP[i % WARNA_JP.length]);
+}
+
+function renderChart1() {
+  const wrap = document.getElementById('spm-jpn-chart1-wrap');
+  const metrik = (document.getElementById('spm-c1-metrik') || {}).value || 'gpmp';
+  if (!_filteredSpmJPN.length) { wrap.style.display = 'none'; return; }
+
+  const jpList = [...new Set(_filteredSpmJPN.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const ppdList = [...new Set(_filteredSpmJPN.map(r => r['ppd']))].sort();
+
+  const datasets = jpList.map((jp, i) => {
+    const data = ppdList.map(ppd => {
+      const rekod = _filteredSpmJPN.filter(r => r['ppd'] === ppd && r['jenis pentaksiran'] === jp);
+      if (!rekod.length) return null;
+      const jmlD = rekod.reduce((s, r) => s + r['bil duduki'], 0);
+      if (metrik === 'gpmp') return jmlD ? +(rekod.reduce((s, r) => s + r['gpmp'] * r['bil duduki'], 0) / jmlD).toFixed(2) : null;
+      return jmlD ? +(rekod.reduce((s, r) => s + r[metrik] * r['bil duduki'], 0) / jmlD).toFixed(2) : null;
+    });
+    return { label: jp, data, backgroundColor: WARNA_JP[i % WARNA_JP.length] + 'cc', borderColor: WARNA_JP[i % WARNA_JP.length], borderWidth: 1 };
+  });
+
+  wrap.style.display = '';
+  if (_chartPPD) _chartPPD.destroy();
+  _chartPPD = new Chart(document.getElementById('chart-ppd'), {
+    type: 'bar',
+    data: { labels: ppdList.map(p => p.replace('PPD ','')), datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        y: { beginAtZero: true,
+          min: 0,
+          max: metrik === 'gpmp' ? 9 : undefined,
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'PPD' } }
+      }
+    }
+  });
+}
+
+function renderChart2() {
+  const skl = (document.getElementById('spm-c2-sekolah') || {}).value || '';
+  const metrik = (document.getElementById('spm-c2-metrik') || {}).value || 'gpmp';
+  const wrap = document.getElementById('spm-jpn-chart2-wrap');
+  if (!skl) { if (_chartSekolah) { _chartSekolah.destroy(); _chartSekolah = null; } return; }
+
+  const rekodSkl = _filteredSpmJPN.filter(r => r['nama sekolah'] === skl);
+  const jpList = [...new Set(rekodSkl.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const nilaiList = jpList.map(jp => {
+    const r = rekodSkl.find(x => x['jenis pentaksiran'] === jp);
+    return r ? +r[metrik] : 0;
+  });
+
+  if (_chartSekolah) _chartSekolah.destroy();
+  _chartSekolah = new Chart(document.getElementById('chart-sekolah'), {
+    type: 'bar',
+    data: {
+      labels: jpList,
+      datasets: [{ label: skl, data: nilaiList, backgroundColor: warnaJP(jpList), borderWidth: 1 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true,
+          min: 0,
+          max: metrik === 'gpmp' ? 9 : undefined,
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'Jenis Pentaksiran' } }
+      }
+    }
+  });
+}
+
+function janaJadualSpmJpn() {
+  const el = document.getElementById('jpn-spm-result');
+  if (!_filteredSpmJPN.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><p>Tiada data. Klik Papar dulu.</p></div>';
+    return;
+  }
+  el.innerHTML = '<div id="spm-table-jpn"></div>';
+  renderJadualSPM(_filteredSpmJPN, 'spm-table-jpn');
 }
 
 </script>

@@ -192,6 +192,9 @@ function setTab(btn, page) {
   btn.classList.add('active');
   const el = document.getElementById('page-' + page);
   if (el) el.classList.add('show');
+  // Auto-trigger untuk page SPM JPN
+  if (page === 'prestasi-spm-jpn') setTimeout(() => muatPrestasiJPN(), 50);
+  if (page === 'analisis') setTimeout(() => { if (typeof setJPNSubTab === 'function') setJPNSubTab('item'); }, 50);
 }
 
 // ── MODAL
@@ -331,4 +334,140 @@ function fmtPilihanSP(s) {
   // s adalah objek dari table skpsp (tingkatan, sk_kod, tajuk, sp_kod, huraian)
   const huraianDipendekkan = s.huraian ? s.huraian.substring(0, 40) + '...' : '—';
   return `[T${s.tingkatan}] ${s.sp_kod} - ${huraianDipendekkan}`;
+}
+
+// ── PETA PPD (singkatan Sheets → nama penuh Supabase)
+const PETA_PPD_SINGKATAN = {
+  'BLG':'PPD BALING','KBB':'PPD KULIM BANDAR BAHARU',
+  'KM':'PPD KUALA MUDA','KP':'PPD KUBANG PASU',
+  'KS':'PPD KOTA SETAR','LKW':'PPD LANGKAWI',
+  'PDG':'PPD PENDANG','PT':'PPD PADANG TERAP',
+  'SIK':'PPD SIK','YAN':'PPD YAN'
+};
+
+// ── PETA JENIS PENTAKSIRAN (kod Sheets → nama sistem)
+const PETA_PENTAKSIRAN_SPM = {
+  'PAT':'PASA', 'PPC':'PSPM', 'PPT':'PPSA'
+};
+
+// ── URL CSV Google Sheets SPM
+const SPM_CSV_BASE = 'https://docs.google.com/spreadsheets/d/1KI4hq7-JJ7MEVjisURmIJSiOsq_uUmlUfzYWt1tHVEw/export?format=csv&gid=66040387';
+const SPM_CSV_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+  ? 'https://corsproxy.io/?' + encodeURIComponent(SPM_CSV_BASE)
+  : SPM_CSV_BASE;
+const SPM_CACHE_KEY = 'simp_spm_cache';
+const SPM_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+// ── MUAT DATA SPM (cache 24 jam)
+async function muatDataSPM() {
+  // Semak cache
+  try {
+    const cache = JSON.parse(localStorage.getItem(SPM_CACHE_KEY));
+    if (cache && (Date.now() - cache.masa) < SPM_CACHE_TTL) {
+      window._dataSPM = cache.data;
+      return cache.data;
+    }
+  } catch(e) {}
+
+  try {
+    const res = await fetch(SPM_CSV_URL);
+    const teks = await res.text();
+    const baris = teks.trim().split('\n');
+    const header = baris[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+
+    const data = [];
+    for (let i = 1; i < baris.length; i++) {
+      // Handle CSV dengan koma dalam nilai (quoted)
+      const kol = baris[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g) || [];
+      const clean = kol.map(k => k.trim().replace(/^"|"$/g,''));
+      if (clean.length < 5) continue;
+
+      const obj = {};
+      header.forEach((h, idx) => obj[h] = clean[idx] || '');
+
+      // Normalize PPD
+      const singkatan = (obj['ppd'] || '').toUpperCase().trim();
+      obj['ppd'] = PETA_PPD_SINGKATAN[singkatan] || obj['ppd'];
+
+      // Normalize jenis pentaksiran: "PPC T5 2025" → "PSPM T5 2025"
+      const jp = obj['jenis pentaksiran'] || '';
+      const prefiks = jp.split(' ')[0].toUpperCase();
+      if (PETA_PENTAKSIRAN_SPM[prefiks]) {
+        obj['jenis pentaksiran'] = jp.replace(prefiks, PETA_PENTAKSIRAN_SPM[prefiks]);
+      }
+
+      // Tukar ke nombor
+      ['bil duduki','bil a+','bil a','bil a-','jum_a','bil b+','bil b',
+       'bil c+','bil c','bil kredit','bil d','bil e','bil lulus','bil g'].forEach(k => {
+        obj[k] = parseInt(obj[k]) || 0;
+      });
+      ['%a','% kredit','%lulus','% gagal','gpmp'].forEach(k => {
+        obj[k] = parseFloat(obj[k]) || 0;
+      });
+
+      data.push(obj);
+    }
+
+    localStorage.setItem(SPM_CACHE_KEY, JSON.stringify({ masa: Date.now(), data }));
+    window._dataSPM = data;
+    return data;
+  } catch(e) {
+    console.error('Gagal muat data SPM:', e);
+    window._dataSPM = [];
+    return [];
+  }
+}
+
+// ── RENDER TABLE SEJARAH PRESTASI
+function renderJadualSPM(data, elId, sortKol, sortAsc) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!data || data.length === 0) {
+    el.innerHTML = '<div class="empty-state">Tiada data ditemui.</div>'; return;
+  }
+  // Sort
+  const kolMap = {'duduki':'bil duduki','%a':'%a','kredit':'% kredit','lulus':'%lulus','gpmp':'gpmp'};
+  let sorted = [...data];
+  if (sortKol && kolMap[sortKol]) {
+    sorted.sort((a,b) => {
+      const av = parseFloat(a[kolMap[sortKol]]) || 0;
+      const bv = parseFloat(b[kolMap[sortKol]]) || 0;
+      return sortAsc ? av - bv : bv - av;
+    });
+  }
+  const thSort = (label, kol) => {
+    const aktif = sortKol === kol;
+    const ikon = aktif ? (sortAsc ? ' ▲' : ' ▼') : ' ⇅';
+    return `<th style="text-align:center;cursor:pointer;user-select:none" onclick="_sortJadualSPM('${elId}','${kol}',${aktif?!sortAsc:false})">${label}${ikon}</th>`;
+  };
+  const html = `
+    <table class="data-table">
+      <thead><tr>
+        <th style="text-align:center;width:40px">#</th>
+        <th>Sekolah</th><th>PPD</th><th>Pentaksiran</th>
+        ${thSort('Bil Duduki','duduki')}
+        ${thSort('%A','%a')}
+        ${thSort('% Kredit','kredit')}
+        ${thSort('% Lulus','lulus')}
+        ${thSort('GPMP','gpmp')}
+      </tr></thead>
+      <tbody>
+        ${sorted.map((r,i) => `<tr>
+          <td style="text-align:center;color:var(--muted);font-size:12px">${i+1}</td>
+          <td>${r['nama sekolah'] || '—'}</td>
+          <td><span class="chip">${r['ppd'] || '—'}</span></td>
+          <td style="font-size:12px">${r['jenis pentaksiran'] || '—'}</td>
+          <td style="text-align:center">${r['bil duduki']}</td>
+          <td style="text-align:center;font-weight:700;color:var(--cyan)">${r['%a'].toFixed(2)}%</td>
+          <td style="text-align:center">${r['% kredit'].toFixed(2)}%</td>
+          <td style="text-align:center">${r['%lulus'].toFixed(2)}%</td>
+          <td style="text-align:center;font-weight:700;color:${r['gpmp']<=4?'var(--emerald)':r['gpmp']<=6?'var(--amber)':'var(--rose)'}">${r['gpmp'].toFixed(2)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  el.innerHTML = html;
+}
+function _sortJadualSPM(elId, kol, asc) {
+  const src = elId === 'spm-table-jpn' ? window._filteredSpmJPN : window._filteredSpmPPD;
+  if (src) renderJadualSPM(src, elId, kol, asc);
 }
