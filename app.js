@@ -426,7 +426,7 @@ function renderJadualSPM(data, elId, sortKol, sortAsc) {
     el.innerHTML = '<div class="empty-state">Tiada data ditemui.</div>'; return;
   }
   // Sort
-  const kolMap = {'duduki':'bil duduki','%a':'%a','kredit':'% kredit','lulus':'%lulus','gpmp':'gpmp'};
+  const kolMap = {'duduki':'bil duduki','%a':'%a','kredit':'% kredit','lulus':'%lulus','gpmp':'gpmp','aPlusGred':'bil a+','aGred':'bil a','aMinGred':'bil a-','bPlusGred':'bil b+','bGred':'bil b','cPlusGred':'bil c+','cGred':'bil c','dGred':'bil d','eGred':'bil e','gGred':'bil g'};
   let sorted = [...data];
   if (sortKol && kolMap[sortKol]) {
     sorted.sort((a,b) => {
@@ -445,10 +445,17 @@ function renderJadualSPM(data, elId, sortKol, sortAsc) {
       <thead><tr>
         <th style="text-align:center;width:40px">#</th>
         <th>Sekolah</th><th>PPD</th><th>Pentaksiran</th>
-        ${thSort('Bil Duduki','duduki')}
-        ${thSort('%A','%a')}
-        ${thSort('% Kredit','kredit')}
-        ${thSort('% Lulus','lulus')}
+        ${thSort('Duduki','duduki')}
+        ${thSort('A+','aPlusGred')}
+        ${thSort('A','aGred')}
+        ${thSort('A-','aMinGred')}
+        ${thSort('B+','bPlusGred')}
+        ${thSort('B','bGred')}
+        ${thSort('C+','cPlusGred')}
+        ${thSort('C','cGred')}
+        ${thSort('D','dGred')}
+        ${thSort('E','eGred')}
+        ${thSort('G','gGred')}
         ${thSort('GPMP','gpmp')}
       </tr></thead>
       <tbody>
@@ -458,16 +465,26 @@ function renderJadualSPM(data, elId, sortKol, sortAsc) {
           <td><span class="chip">${r['ppd'] || '—'}</span></td>
           <td style="font-size:12px">${r['jenis pentaksiran'] || '—'}</td>
           <td style="text-align:center">${r['bil duduki']}</td>
-          <td style="text-align:center;font-weight:700;color:var(--cyan)">${r['%a'].toFixed(2)}%</td>
-          <td style="text-align:center">${r['% kredit'].toFixed(2)}%</td>
-          <td style="text-align:center">${r['%lulus'].toFixed(2)}%</td>
-          <td style="text-align:center;font-weight:700;color:${r['gpmp']<=4?'var(--emerald)':r['gpmp']<=6?'var(--amber)':'var(--rose)'}">${r['gpmp'].toFixed(2)}</td>
+          <td style="text-align:center;font-weight:700;color:var(--cyan)">${r['bil a+']||0}</td>
+          <td style="text-align:center">${r['bil a']||0}</td>
+          <td style="text-align:center">${r['bil a-']||0}</td>
+          <td style="text-align:center">${r['bil b+']||0}</td>
+          <td style="text-align:center">${r['bil b']||0}</td>
+          <td style="text-align:center">${r['bil c+']||0}</td>
+          <td style="text-align:center">${r['bil c']||0}</td>
+          <td style="text-align:center;color:var(--amber)">${r['bil d']||0}</td>
+          <td style="text-align:center;color:var(--rose)">${r['bil e']||0}</td>
+          <td style="text-align:center;font-weight:700;color:var(--rose)">${r['bil g']||0}</td>
+          <td style="text-align:center;font-weight:700;color:${r['gpmp']<=4?'var(--emerald)':r['gpmp']<=6?'var(--amber)':'var(--rose)'}\">${r['gpmp'].toFixed(2)}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
   el.innerHTML = html;
 }
 function _sortJadualSPM(elId, kol, asc) {
-  const src = elId === 'spm-table-jpn' ? window._filteredSpmJPN : window._filteredSpmPPD;
+  const src = elId === 'spm-table-jpn' ? window._filteredSpmJPN
+    : (elId === 'spm-table-guru' || elId === 'guru-spm-result-table') ? window._filteredSpmGuru
+    : elId === 'spm-table-ppd' ? window._filteredSpmPPD
+    : null;
   if (src) renderJadualSPM(src, elId, kol, asc);
 }

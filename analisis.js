@@ -414,7 +414,7 @@ function _renderAnalisis(d, params, peranan) {
     (d.analisisKelas.length>1 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-kelas\')">🏫 Analisis Kelas</button>' : '') +
     (d.ranking.length>0 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-ranking\')">🏆 Ranking Sekolah</button>' : '') +
     '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-gp\')">📈 GP & Gred SPM</button>' +
-    (d.muridBerisiko.length>0 ? '<button class="btn-ghost ana-tab" onclick="anaTab(this,\'an-berisiko\')">⚠️ Murid Berisiko</button>' : '') +
+    
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">' +
     '<button class="btn-ghost" onclick="cetakAnalisis(\'Analisis SIMP-Ai\')">🖨️ Cetak</button>' +

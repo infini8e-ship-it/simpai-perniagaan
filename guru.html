@@ -13,8 +13,8 @@
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">🏠 Dashboard</button>
     <button class="nav-tab" onclick="setTab(this,'murid');resetViewMurid()">👥 Senarai Murid</button>
     <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak Analisis</button>
-    <button class="nav-tab" onclick="setTab(this,'analisis')">📊 Analisis Sekolah</button>
-    <button class="nav-tab" onclick="setTab(this,'prestasi');muatPrestasiGuru()">🏆 Sejarah Prestasi</button>
+    <button class="nav-tab" onclick="setTab(this,'analisis');setSubTab('item')">📊 Analisis Sekolah</button>
+    
     <button class="nav-tab" onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
   </div>
   <div class="nav-right">
@@ -30,8 +30,7 @@
 <div class="page show" id="page-dashboard">
   <div class="sec-hd">
     <div><div class="sec-title" id="greeting">Dashboard Guru ✏️</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
-    <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=tapak]'),'tapak')">+ Jana Tapak</button>
-  </div>
+    </div>
   <div id="panel-kemaskini" style="display:none;margin-bottom:16px">
     <div class="alert alert-warn" style="flex-direction:column;align-items:flex-start;gap:10px">
       <div style="display:flex;align-items:center;gap:8px;font-weight:700">
@@ -104,7 +103,56 @@
   </div><!-- /sub-item -->
 
   <div id="sub-prestasi-guru" style="display:none">
-    <div id="prestasi-guru-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+    <div class="sec-hd">
+      <div><div class="sec-sub">Pencapaian SPM Perniagaan — <span id="nama-sekolah-prestasi">—</span></div></div>
+      
+    </div>
+    <div class="card" style="margin-bottom:16px;overflow:visible">
+      <div class="card-body" style="overflow:visible">
+        <div class="form-grid form-grid-2" style="margin-bottom:12px;overflow:visible">
+          <div class="form-group">
+            <label class="form-label">Jenis Pentaksiran</label>
+            <div class="dropdown-check" id="guru-pentaksiran-wrap">
+              <button class="dropdown-check-btn" onclick="toggleDropdownCheck('guru-ddc')">
+                <span id="guru-ddc-label">Semua Pentaksiran</span> ▾
+              </button>
+              <div class="dropdown-check-list" id="guru-ddc" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" onclick="tapis_spm_guru()">🔍 Papar</button>
+          <button class="btn-ghost" onclick="resetTapisanGuru()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+    <div id="guru-spm-kad" style="display:none;margin-bottom:16px">
+      <div class="stats-row stats-5">
+        <div class="stat-card sc-in"><div class="stat-val" id="gk-duduki">—</div><div class="stat-lbl">Bil Duduki</div></div>
+        <div class="stat-card sc-em"><div class="stat-val" id="gk-a">—</div><div class="stat-lbl">% A</div></div>
+        <div class="stat-card sc-cy"><div class="stat-val" id="gk-kredit">—</div><div class="stat-lbl">% Kredit</div></div>
+        <div class="stat-card sc-am"><div class="stat-val" id="gk-lulus">—</div><div class="stat-lbl">% Lulus</div></div>
+        <div class="stat-card sc-ro"><div class="stat-val" id="gk-gpmp">—</div><div class="stat-lbl">GPMP</div></div>
+      </div>
+    </div>
+    <div class="card" id="guru-chart-wrap" style="display:none;margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-title">📈 Trend Prestasi Sekolah</div>
+        <select class="form-select" id="guru-c-metrik" style="width:140px" onchange="renderChartGuru()">
+          <option value="gpmp">GPMP</option>
+          <option value="%a">% A</option>
+          <option value="% kredit">% Kredit</option>
+          <option value="%lulus">% Lulus</option>
+        </select>
+      </div>
+      <div class="card-body"><canvas id="chart-guru" height="100"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📋 Rekod Prestasi</div></div>
+      <div id="guru-spm-result" style="padding:16px">
+        <div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Pilih parameter dan klik Papar.</p></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -205,16 +253,8 @@
     </div>
   </div><!-- tutup sm-view-edit -->
 </div>
-<!-- SEJARAH PRESTASI -->
-<div class="page" id="page-prestasi">
-  <div class="sec-hd">
-    <div><div class="sec-title">Sejarah Prestasi 🏆</div><div class="sec-sub">Pencapaian SPM Perniagaan — <span id="nama-sekolah-prestasi">—</span></div></div>
-    <button class="btn-ghost" onclick="muatPrestasiGuru(true)">🔄 Muat Semula</button>
-  </div>
-  <div id="prestasi-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
-</div>
 
-</main>
+
 </main>
 <div class="toast" id="toast"></div>
 
@@ -356,6 +396,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
@@ -1102,47 +1143,176 @@ function setSubTab(nama) {
   document.getElementById('sub-prestasi-guru').style.display = nama === 'prestasi-guru' ? '' : 'none';
   document.getElementById('stab-item').classList.toggle('active', nama === 'item');
   document.getElementById('stab-prestasi-guru').classList.toggle('active', nama === 'prestasi-guru');
-  if (nama === 'prestasi-guru') muatPrestasiGuru();
+  if (nama === 'prestasi-guru') { muatPrestasiGuru(); }
 }
 
-// ── MUAT SEJARAH PRESTASI GURU
+// ── DROPDOWN CHECKBOX (Prestasi)
+function toggleDropdownCheck(id) {
+  const el = document.getElementById(id);
+  const buka = el.style.display === 'none' || el.style.display === '';
+  document.querySelectorAll('.dropdown-check-list').forEach(d => { d.style.display = 'none'; });
+  if (!buka) return;
+  const btn = document.querySelector(`[onclick*="${id}"]`);
+  const rect = btn.getBoundingClientRect();
+  if (el.parentNode !== document.body) document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.left = rect.left + 'px';
+  el.style.width = Math.max(rect.width, 240) + 'px';
+  el.style.zIndex = '999999';
+  const ddH = 240;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  el.style.top = (spaceBelow >= ddH || rect.top < ddH)
+    ? (rect.bottom + 4) + 'px'
+    : (rect.top - ddH - 4) + 'px';
+  el.style.display = 'block';
+  el.style.transform = 'translateZ(0)';
+  el.style.willChange = 'transform';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-check') && !e.target.closest('.dropdown-check-list'))
+    document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+});
+window.addEventListener('scroll', e => {
+  if (e.target && e.target.closest && e.target.closest('.dropdown-check-list')) return;
+  document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+}, true);
+// ── PRESTASI GURU: state
+var _rawSpmGuru = [], _filteredSpmGuru = [];
+var _chartGuru = null;
+
 async function muatPrestasiGuru(forceRefresh = false) {
-  const elBody = document.getElementById('prestasi-guru-body') || document.getElementById('prestasi-body');
-  if (!elBody) return;
-  elBody.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div><p style="margin-top:8px;color:var(--muted);font-size:13px">Memuatkan data SPM...</p></div>';
-
   if (forceRefresh) localStorage.removeItem('simp_spm_cache');
-
+  const namaEl = document.getElementById('nama-sekolah-prestasi');
+  if (namaEl) namaEl.textContent = STATE.namaSekolah || STATE.kodSekolah;
+  const elResult = document.getElementById('guru-spm-result');
+  if (elResult) elResult.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
   const semua = await muatDataSPM();
-  const data = semua.filter(r =>
+  _rawSpmGuru = semua.filter(r =>
     r['mata pelajaran'] === 'PERNIAGAAN' &&
     r['kod sekolah'] === STATE.kodSekolah
   );
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const jpSet = [...new Set(_rawSpmGuru.map(r => r['jenis pentaksiran']).filter(Boolean))].sort((a,b) => {
+    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
+    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
+    if (tA !== tB) return tA - tB;
+    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+  const elDDC = document.getElementById('guru-ddc');
+  if (elDDC) elDDC.innerHTML = jpSet.map(j =>
+    `<label class="ddc-item"><input type="checkbox" value="${j}" onchange="kemaskiniLabelDdcGuru()"> ${j}</label>`
+  ).join('');
+  _filteredSpmGuru = [..._rawSpmGuru];
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
 
-  const namaEl = document.getElementById('nama-sekolah-prestasi');
-  if (namaEl) namaEl.textContent = STATE.namaSekolah || STATE.kodSekolah;
+function getCheckedPentaksiran_guru() {
+  return [...document.querySelectorAll('#guru-ddc input:checked')].map(c => c.value);
+}
 
-  if (!data.length) {
-    elBody.innerHTML = '<div class="empty-state card" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod prestasi SPM untuk sekolah ini.</p></div>';
+function kemaskiniLabelDdcGuru() {
+  const checked = getCheckedPentaksiran_guru();
+  const el = document.getElementById('guru-ddc-label');
+  if (!el) return;
+  el.textContent = checked.length === 0 ? 'Semua Pentaksiran'
+    : checked.length === 1 ? checked[0]
+    : `${checked.length} dipilih`;
+}
+
+function tapis_spm_guru() {
+  const jpList = getCheckedPentaksiran_guru();
+  _filteredSpmGuru = _rawSpmGuru.filter(r => {
+    if (jpList.length && !jpList.includes(r['jenis pentaksiran'])) return false;
+    return true;
+  });
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
+
+function resetTapisanGuru() {
+  document.querySelectorAll('#guru-ddc input').forEach(c => c.checked = false);
+  kemaskiniLabelDdcGuru();
+  _filteredSpmGuru = [..._rawSpmGuru];
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
+
+function _renderPrestasiGuru() {
+  if (!_filteredSpmGuru.length) {
+    document.getElementById('guru-spm-kad').style.display = 'none';
+    document.getElementById('guru-chart-wrap').style.display = 'none';
+    document.getElementById('guru-spm-result').innerHTML =
+      '<div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
     return;
   }
+  _renderKadGuru(_filteredSpmGuru);
+  renderChartGuru();
+  renderJadualSPM(_filteredSpmGuru, 'guru-spm-result-table');
+  document.getElementById('guru-spm-result').innerHTML = '<div id="guru-spm-result-table"></div>';
+  renderJadualSPM(_filteredSpmGuru, 'guru-spm-result-table');
+}
 
-  // Ringkasan
-  const terkini = data[data.length - 1];
-  const ringkasan = `
-    <div class="stats-row stats-4" style="margin-bottom:16px">
-      <div class="stat-card sc-in"><div class="stat-val">${terkini['bil duduki']}</div><div class="stat-lbl">Bil Duduki</div></div>
-      <div class="stat-card sc-em"><div class="stat-val">${terkini['%a'].toFixed(1)}%</div><div class="stat-lbl">% A</div></div>
-      <div class="stat-card sc-am"><div class="stat-val">${terkini['% kredit'].toFixed(1)}%</div><div class="stat-lbl">% Kredit</div></div>
-      <div class="stat-card sc-ro"><div class="stat-val" style="color:${terkini['gpmp']<=4?'var(--emerald)':terkini['gpmp']<=6?'var(--amber)':'var(--rose)'}">${terkini['gpmp'].toFixed(2)}</div><div class="stat-lbl">GPMP</div></div>
-    </div>`;
+function _renderKadGuru(data) {
+  const el = document.getElementById('guru-spm-kad');
+  if (!el) return;
+  const jmlD = data.reduce((s,r) => s + r['bil duduki'], 0);
+  const pA  = jmlD ? (data.reduce((s,r) => s + r['%a']       * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const pK  = jmlD ? (data.reduce((s,r) => s + r['% kredit'] * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const pL  = jmlD ? (data.reduce((s,r) => s + r['%lulus']   * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const gp  = jmlD ? (data.reduce((s,r) => s + r['gpmp']     * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  document.getElementById('gk-duduki').textContent = jmlD;
+  document.getElementById('gk-a').textContent      = pA  + (pA  !== '—' ? '%' : '');
+  document.getElementById('gk-kredit').textContent = pK  + (pK  !== '—' ? '%' : '');
+  document.getElementById('gk-lulus').textContent  = pL  + (pL  !== '—' ? '%' : '');
+  document.getElementById('gk-gpmp').textContent   = gp;
+  el.style.display = '';
+}
 
-  elBody.innerHTML = ringkasan;
-  const wrap = document.createElement('div');
-  wrap.className = 'card';
-  wrap.innerHTML = `<div class="card-head"><div class="card-title">📋 Rekod Prestasi SPM</div></div><div class="card-body" style="padding:0" id="spm-table-guru"></div>`;
-  elBody.appendChild(wrap);
-  renderJadualSPM(data, 'spm-table-guru');
+function renderChartGuru() {
+  const wrap   = document.getElementById('guru-chart-wrap');
+  const metrik = (document.getElementById('guru-c-metrik') || {}).value || 'gpmp';
+  if (!_filteredSpmGuru.length) { wrap.style.display = 'none'; return; }
+
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const jpList = [...new Set(_filteredSpmGuru.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
+    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
+    if (tA !== tB) return tA - tB;
+    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+
+  const WARNA = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+  const nilaiList = jpList.map(jp => {
+    const r = _filteredSpmGuru.find(x => x['jenis pentaksiran'] === jp);
+    return r ? +r[metrik] : 0;
+  });
+
+  wrap.style.display = '';
+  if (_chartGuru) _chartGuru.destroy();
+  _chartGuru = new Chart(document.getElementById('chart-guru'), {
+    type: 'bar',
+    data: {
+      labels: jpList,
+      datasets: [{ label: STATE.namaSekolah || STATE.kodSekolah, data: nilaiList,
+        backgroundColor: WARNA.slice(0, jpList.length).map(c => c + 'cc'),
+        borderColor: WARNA.slice(0, jpList.length), borderWidth: 1 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, min: 0,
+          max: metrik === 'gpmp' ? 9 : undefined,
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'Jenis Pentaksiran' } }
+      }
+    }
+  });
 }
 
 </script>

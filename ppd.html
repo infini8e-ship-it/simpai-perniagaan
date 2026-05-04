@@ -466,8 +466,10 @@ function _renderSpmPPD() {
   const cari = ((document.getElementById('spm-cari') || {}).value || '').toLowerCase();
 
   let data = _rawSpmPPD;
+  window._filteredSpmPPD = data;
   if (jenis) data = data.filter(r => r['jenis pentaksiran'].includes(jenis));
   if (cari) data = data.filter(r => (r['nama sekolah'] || '').toLowerCase().includes(cari));
+  window._filteredSpmPPD = data;
 
   if (!data.length) {
     elBody.innerHTML = '<div class="empty-state card" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
