@@ -380,13 +380,13 @@ function setTabMobile(page) {
 
 function bukaDrawer() {
   const d = document.getElementById('nav-drawer');
-  if (d) { d.classList.add('open'); d.style.pointerEvents = ''; }
+  if (d) { d.style.display = 'block'; d.classList.add('open'); }
   document.body.style.overflow = 'hidden';
 }
 
 function tutupDrawer() {
   const d = document.getElementById('nav-drawer');
-  if (d) { d.classList.remove('open'); d.style.pointerEvents = 'none'; }
+  if (d) { d.style.display = 'none'; d.classList.remove('open'); }
   document.body.style.overflow = '';
 }
 

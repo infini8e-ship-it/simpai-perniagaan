@@ -321,10 +321,9 @@ main { padding: 24px; max-width: 1280px; margin: 0 auto; }
 
 /* ── MOBILE DRAWER ── */
 .nav-drawer {
-  display: block; position: fixed; inset: 0; z-index: 9000;
-  pointer-events: none; visibility: hidden;
+  display: none; position: fixed; inset: 0; z-index: 9000;
 }
-.nav-drawer.open { pointer-events: all; visibility: visible; }
+.nav-drawer.open { display: block; }
 .nav-drawer-overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,.4); backdrop-filter: blur(2px);
