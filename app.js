@@ -201,6 +201,7 @@ function setTab(btn, page) {
   if (el) el.classList.add('show');
   if (page === 'prestasi-spm-jpn') setTimeout(() => muatPrestasiJPN(), 50);
   if (page === 'analisis') setTimeout(() => { if (typeof setJPNSubTab === 'function') setJPNSubTab('item'); }, 50);
+  setTimeout(() => _kemaskiniDrawerActive(page), 50);
 }
 
 // ── MODAL
@@ -355,6 +356,7 @@ function _initDrawer() {
       </div>
     </div>`;
   document.body.appendChild(drawer);
+  drawer.style.display = 'none';
 
   // Tambah butang hamburger dalam nav jika belum ada
   if (!document.querySelector('.nav-hamburger')) {
@@ -390,11 +392,8 @@ function tutupDrawer() {
   document.body.style.overflow = '';
 }
 
-// Kemaskini active state dalam drawer
-const _origSetTab = setTab;
-function setTab(btn, page) {
-  _origSetTab(btn, page);
-  // Kemaskini drawer active
+// Kemaskini active state dalam drawer selepas setTab
+function _kemaskiniDrawerActive(page) {
   const drawer = document.getElementById('nav-drawer');
   if (!drawer) return;
   drawer.querySelectorAll('.nav-drawer-item, .nav-drawer-sub').forEach(b => b.classList.remove('active'));
