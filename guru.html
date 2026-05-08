@@ -12,10 +12,15 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">🏠 Dashboard</button>
     <button class="nav-tab" onclick="setTab(this,'murid');resetViewMurid()">👥 Senarai Murid</button>
-    <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak Analisis</button>
-    <button class="nav-tab" onclick="setTab(this,'analisis');setSubTab('item')">📊 Analisis Sekolah</button>
-    
-    <button class="nav-tab" onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
+    <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak</button>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">📊 Analisis ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'analisis');setSubTab('item')">📊 Analisis Sekolah</button>
+        <button onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
+        <button onclick="setTab(this,'sasaran-murid');muatSasaranMurid()">🎯 Sasaran Murid</button>
+      </div>
+    </div>
   </div>
   <div class="nav-right">
     <span class="nav-badge nb-guru" id="nav-badge">GURU</span>
@@ -254,6 +259,14 @@
   </div><!-- tutup sm-view-edit -->
 </div>
 
+
+<!-- PAGE: SASARAN MURID -->
+<div class="page" id="page-sasaran-murid">
+  <div class="sec-hd">
+    <div><div class="sec-title">🎯 Sasaran Murid SPM 2026</div><div class="sec-sub">Borang Sasaran Murid berdasarkan ETR Sekolah</div></div>
+  </div>
+  <div id="sasaran-murid-wrap"></div>
+</div>
 
 </main>
 <div class="toast" id="toast"></div>
@@ -1315,6 +1328,292 @@ function renderChartGuru() {
   });
 }
 
+// ── NAV DROPDOWN HOVER
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(dd) {
+    var closeTimer;
+    dd.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      var menu = dd.querySelector('.nav-drop-menu');
+      var rect = dd.getBoundingClientRect();
+      menu.style.cssText = 'display:block !important;position:fixed !important;top:'+(rect.bottom)+'px !important;left:'+rect.left+'px !important;z-index:99999 !important;background:white !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 8px 24px rgba(0,0,0,.15) !important;min-width:190px !important;padding:6px 0 !important';
+    });
+    dd.addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 150);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 100);
+    });
+  });
+});
+
+// ================================================================
+// MODUL SASARAN MURID — GURU
+// ================================================================
+var _etrSekolah = null;
+var _muridList = [];
+var _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+var _sasaranStatus = 'DRAF';
+var _gpnNegeri = 4.71;
+
+async function muatSasaranMurid() {
+  const wrap = document.getElementById('sasaran-murid-wrap');
+  wrap.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div> Memuatkan...</div>';
+
+  // Muat GPN negeri
+  const { data: tetap } = await db.from('tetapan_umum').select('kunci,nilai').eq('kunci','gpn_negeri_2026');
+  if (tetap && tetap[0]) _gpnNegeri = parseFloat(tetap[0].nilai) || 4.71;
+
+  // Muat ETR sekolah
+  const { data: etr } = await db.from('etr_sasaran')
+    .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah).single();
+
+  if (!etr || etr.status_hantar !== 'DIHANTAR') {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state" style="padding:40px">
+      <div class="ico">📋</div>
+      <p>Sasaran ETR belum dihantar oleh JPN. Sila hubungi JPN Kedah untuk maklumat lanjut.</p>
+    </div></div></div>`;
+    return;
+  }
+  _etrSekolah = etr;
+
+  // Muat murid dari skor_master PPSA T5 2026
+  const { data: murid } = await db.from('skor_master')
+    .select('nama_murid, kelas, gred, markah_wajaran')
+    .eq('kod_sekolah', STATE.kodSekolah)
+    .eq('tingkatan','5')
+    .eq('jenis_pentaksiran','PENTAKSIRAN PERTENGAHAN SESI AKADEMIK')
+    .eq('tahun','2026')
+    .order('markah_wajaran', { ascending: false });
+
+  if (!murid || !murid.length) {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state" style="padding:40px">
+      <div class="ico">⚠️</div>
+      <p>Tiada data PPSA T5 2026 dijumpai. Sila sync tapak analisis dahulu sebelum isi borang sasaran.</p>
+    </div></div></div>`;
+    return;
+  }
+  _muridList = murid;
+
+  // Muat sasaran sedia ada
+  const { data: sedia } = await db.from('sasaran_murid')
+    .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+  _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+  if (sedia && sedia.length) {
+    sedia.forEach(s => {
+      if (_sasaranPilihan[s.kategori]) _sasaranPilihan[s.kategori].push({ nama: s.nama_murid, gred: s.gred_semasa });
+    });
+    _sasaranStatus = sedia[0].status || 'DRAF';
+  }
+
+  renderBorangSasaran();
+}
+
+function kuotaMin(kat) {
+  const e = _etrSekolah;
+  if (!e) return 0;
+  if (kat === 'CEMERLANG') return (e.bil_aplus_semasa||e.bil_aplus||0)+(e.bil_a_semasa||e.bil_a||0)+(e.bil_aminus_semasa||e.bil_aminus||0);
+  if (kat === 'KEPUJIAN')  return (e.bil_bplus_semasa||e.bil_bplus||0)+(e.bil_b_semasa||e.bil_b||0)+(e.bil_cplus_semasa||e.bil_cplus||0)+(e.bil_c_semasa||e.bil_c||0);
+  if (kat === 'LULUS')     return (e.bil_d_semasa||e.bil_d||0)+(e.bil_e_semasa||e.bil_e||0);
+  if (kat === 'GAGAL')     return (e.bil_g_semasa||e.bil_g||0);
+  return 0;
+}
+
+function nilaiGred(g) {
+  const map = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'C+':5,'C':6,'D':7,'E':8,'G':9};
+  return map[g] !== undefined ? map[g] : null;
+}
+
+function kiraGPSasaran() {
+  const semua = [..._sasaranPilihan.CEMERLANG, ..._sasaranPilihan.KEPUJIAN, ..._sasaranPilihan.LULUS, ..._sasaranPilihan.GAGAL];
+  const valid = semua.filter(m => nilaiGred(m.gred) !== null);
+  if (!valid.length) return null;
+  const jumlah = valid.reduce((s,m) => s + nilaiGred(m.gred), 0);
+  return Math.round((jumlah / valid.length) * 100) / 100;
+}
+
+function renderBorangSasaran() {
+  const e = _etrSekolah;
+  const gp = kiraGPSasaran();
+  const gpStr = gp !== null ? gp.toFixed(2) : '—';
+  const etrGP = (e.etr_gp_semasa || e.etr_gp || 0).toFixed(2);
+  const kat = e.kategori || 3;
+  const katLabel = ['','Cemerlang','Harapan Tinggi','Peningkatan','Pengukuhan'][kat];
+  const katWarna = ['','var(--ok)','var(--info)','var(--amber)','var(--rose)'][kat];
+  const sudahHantar = _sasaranStatus === 'DIHANTAR_SEKOLAH';
+
+  const wrap = document.getElementById('sasaran-murid-wrap');
+  wrap.innerHTML = `
+  <!-- Info Sekolah -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div style="font-size:16px;font-weight:800;color:var(--ink)">${STATE.namaSekolah||'—'}</div>
+      <div style="font-size:13px;color:var(--sub);margin-top:4px">
+        Kategori <strong style="color:${katWarna}">${kat}: ${katLabel}</strong> &nbsp;|&nbsp;
+        ETR Sasaran GP: <strong style="color:var(--indigo)">${etrGP}</strong> &nbsp;|&nbsp;
+        GPN Negeri: <strong>${_gpnNegeri}</strong>
+      </div>
+      <div style="font-size:13px;color:var(--sub);margin-top:2px">Jumlah Calon T5: <strong>${e.jum_calon_semasa||e.jum_calon||0} murid</strong></div>
+    </div>
+  </div>
+
+  <!-- Stat Kuota -->
+  <div class="stats-row stats-4" style="margin-bottom:16px">
+    ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => {
+      const bil = _sasaranPilihan[k].length;
+      const min = kuotaMin(k);
+      const ok = bil >= min;
+      const warna = k==='CEMERLANG'?'var(--ok)':k==='KEPUJIAN'?'var(--info)':k==='LULUS'?'var(--amber)':'var(--rose)';
+      return `<div class="stat-card" style="border-top:3px solid ${warna}">
+        <div class="stat-val" style="color:${ok?warna:'var(--rose)'}">${bil}/${min}</div>
+        <div class="stat-lbl">${k}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- GP Semasa vs ETR -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div style="background:#1e293b;color:#fff;padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:0.8">ETR SASARAN GP</div>
+      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)">${etrGP}</div>
+      <div style="font-size:11px;opacity:0.8">Kat ${kat}: ${katLabel}</div>
+    </div>
+    <div id="gp-semasa-kad" style="background:linear-gradient(135deg,#1a3c5e,#0f5132);color:#fff;padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:0.8">GP SASARAN SEMASA</div>
+      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)" id="gp-semasa-val">${gpStr}</div>
+      <div style="font-size:11px;opacity:0.9" id="gp-semasa-info">${_sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length} murid dipilih</div>
+    </div>
+  </div>
+
+  <!-- Bahagian per Kategori -->
+  ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => renderSeksyenKategori(k, sudahHantar)).join('')}
+
+  <!-- Footer Butang -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap">
+    ${sudahHantar ? '<span style="color:var(--ok);font-weight:700;align-self:center">✓ Borang telah dihantar</span>' : `
+    <button class="btn-ghost" onclick="simpanDrafSasaran()">💾 Simpan Draf</button>
+    <button class="btn-primary" onclick="hantarBorangSasaran()">📤 Hantar Borang</button>`}
+  </div>`;
+}
+
+function renderSeksyenKategori(kat, disabled) {
+  const min = kuotaMin(kat);
+  const senarai = _sasaranPilihan[kat];
+  const bil = senarai.length;
+  const ok = bil >= min;
+  const warna = kat==='CEMERLANG'?'var(--ok)':kat==='KEPUJIAN'?'var(--info)':kat==='LULUS'?'var(--amber)':'var(--rose)';
+  const label = kat==='CEMERLANG'?'Cemerlang (A+, A, A-)':kat==='KEPUJIAN'?'Kepujian (B+, B, C+, C)':kat==='LULUS'?'Lulus (D, E)':'Gagal (G)';
+
+  // Murid yang belum dipilih dalam mana-mana kategori
+  const dipilih = new Set([..._sasaranPilihan.CEMERLANG,..._sasaranPilihan.KEPUJIAN,..._sasaranPilihan.LULUS,..._sasaranPilihan.GAGAL].map(m=>m.nama));
+  const tersedia = _muridList.filter(m => !dipilih.has(m.nama_murid) || senarai.find(s=>s.nama===m.nama_murid));
+
+  return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${warna}">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:700;font-size:14px;color:${warna}">${label} <span style="font-size:12px;font-weight:600">Min: ${min}</span></div>
+        <div style="font-size:12px;color:${ok?'var(--ok)':'var(--rose)'};font-weight:700">${ok?'✓':'⚠️'} ${bil} / ${min} murid (Min ${min})</div>
+      </div>
+      ${senarai.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${senarai.map(m => `<span style="background:${warna}22;color:${warna};border:1px solid ${warna}44;padding:4px 10px;border-radius:20px;font-size:12.5px;font-weight:600">
+          ${m.nama} <span style="opacity:0.7">(${m.gred||'—'})</span>
+          ${!disabled?`<span onclick="buangMuridSasaran('${kat}','${m.nama}')" style="cursor:pointer;margin-left:4px;opacity:0.7">✕</span>`:''}
+        </span>`).join('')}
+      </div>` : `<div style="font-size:13px;color:var(--sub);margin-bottom:10px">Tiada murid disenaraikan.</div>`}
+      ${!disabled ? `<div style="display:flex;gap:8px;align-items:center">
+        <select class="form-select" id="dd-${kat}" style="flex:1;font-size:13px">
+          <option value="">-- Pilih Murid --</option>
+          ${tersedia.map(m => `<option value="${m.nama_murid}" data-gred="${m.gred||'—'}">${m.nama_murid} (${m.kelas||'—'}) — ${m.gred||'—'}</option>`).join('')}
+        </select>
+        <button class="btn-ghost" style="white-space:nowrap;font-size:13px" onclick="tambahMuridSasaran('${kat}')">+ Tambah</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function tambahMuridSasaran(kat) {
+  const sel = document.getElementById('dd-'+kat);
+  if (!sel || !sel.value) return;
+  const nama = sel.value;
+  const gred = sel.selectedOptions[0]?.dataset.gred || '—';
+  // Semak dah dipilih dalam kategori lain
+  for (const k of ['CEMERLANG','KEPUJIAN','LULUS','GAGAL']) {
+    if (_sasaranPilihan[k].find(m => m.nama === nama)) {
+      tunjukToast('⚠️ '+nama+' sudah dipilih dalam '+k,'warn'); return;
+    }
+  }
+  _sasaranPilihan[kat].push({ nama, gred });
+  kemaskiniGPSasaran();
+  renderBorangSasaran();
+}
+
+function buangMuridSasaran(kat, nama) {
+  _sasaranPilihan[kat] = _sasaranPilihan[kat].filter(m => m.nama !== nama);
+  kemaskiniGPSasaran();
+  renderBorangSasaran();
+}
+
+function kemaskiniGPSasaran() {
+  const gp = kiraGPSasaran();
+  const el = document.getElementById('gp-semasa-val');
+  const info = document.getElementById('gp-semasa-info');
+  if (el) el.textContent = gp !== null ? gp.toFixed(2) : '—';
+  const jum = _sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length;
+  if (info) info.textContent = jum+' murid dipilih';
+}
+
+async function simpanDrafSasaran() {
+  await _simpanSasaran('DRAF');
+}
+
+async function hantarBorangSasaran() {
+  const semua = ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'];
+  for (const k of semua) {
+    if (_sasaranPilihan[k].length < kuotaMin(k)) {
+      tunjukToast('⚠️ Kuota '+k+' belum dipenuhi (min '+kuotaMin(k)+')','warn',4000);
+      return;
+    }
+  }
+  await _simpanSasaran('DIHANTAR_SEKOLAH');
+  // Kemaskini status dalam etr_sasaran
+  await db.from('etr_sasaran').update({ status_sekolah:'DIHANTAR_SEKOLAH', tarikh_sekolah: new Date().toISOString() })
+    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+}
+
+async function _simpanSasaran(status) {
+  const rekod = [];
+  ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].forEach(kat => {
+    _sasaranPilihan[kat].forEach(m => {
+      rekod.push({
+        tahun: '2026', kod_sekolah: STATE.kodSekolah,
+        nama_sekolah: STATE.namaSekolah, nama_murid: m.nama,
+        kategori: kat, gred_semasa: m.gred, status,
+        tarikh_kemaskini: new Date().toISOString(),
+        id_pengguna: STATE.id
+      });
+    });
+  });
+
+  // Padam rekod lama dulu
+  await db.from('sasaran_murid').delete()
+    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+
+  if (rekod.length) {
+    const { error } = await db.from('sasaran_murid').insert(rekod);
+    if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  }
+
+  _sasaranStatus = status;
+  tunjukToast(status==='DIHANTAR_SEKOLAH' ? '✅ Borang dihantar ke JPN!' : '✅ Draf disimpan.','success');
+  renderBorangSasaran();
+}
 </script>
 </body>
 </html>

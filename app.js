@@ -189,10 +189,16 @@ function setTab(btn, page) {
   if (!btn) return;
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
-  btn.classList.add('active');
+  // Jika dari dropdown, aktifkan parent nav-drop-btn
+  const dropParent = btn.closest ? btn.closest('.nav-dropdown') : null;
+  if (dropParent) {
+    const dropBtn = dropParent.querySelector('.nav-drop-btn');
+    if (dropBtn) dropBtn.classList.add('active');
+  } else {
+    btn.classList.add('active');
+  }
   const el = document.getElementById('page-' + page);
   if (el) el.classList.add('show');
-  // Auto-trigger untuk page SPM JPN
   if (page === 'prestasi-spm-jpn') setTimeout(() => muatPrestasiJPN(), 50);
   if (page === 'analisis') setTimeout(() => { if (typeof setJPNSubTab === 'function') setJPNSubTab('item'); }, 50);
 }
@@ -294,6 +300,105 @@ async function simpanProfilGlobal() {
   document.getElementById('modal-profil-global').classList.remove('show');
   if (typeof tunjukToast === 'function') tunjukToast('✅ Profil dikemaskini.', 'success');
 }
+
+// ── MOBILE DRAWER
+function _initDrawer() {
+  // Jangan init dua kali
+  if (document.getElementById('nav-drawer')) return;
+
+  // Bina struktur drawer dari nav-tabs sedia ada
+  const navTabs = document.querySelector('.nav-tabs');
+  const navRight = document.querySelector('.nav-right');
+  if (!navTabs) return;
+
+  // Badge & nama pengguna
+  const badge = navRight ? (navRight.querySelector('.nav-badge') || {}).textContent || '' : '';
+  const avatar = navRight ? (navRight.querySelector('.nav-avatar') || {}).textContent || '—' : '—';
+
+  // Bina item drawer dari nav-tabs
+  let itemsHTML = '';
+  navTabs.querySelectorAll(':scope > .nav-tab, :scope > .nav-dropdown').forEach(el => {
+    if (el.classList.contains('nav-dropdown')) {
+      // Dropdown group
+      const label = el.querySelector('.nav-drop-btn').textContent.replace('▾','').trim();
+      itemsHTML += `<div class="nav-drawer-group-label">${label}</div>`;
+      el.querySelectorAll('.nav-drop-menu button').forEach(btn => {
+        const onclick = btn.getAttribute('onclick') || '';
+        itemsHTML += `<button class="nav-drawer-sub" onclick="${onclick};tutupDrawer()">${btn.textContent}</button>`;
+      });
+      itemsHTML += '<div class="nav-drawer-divider"></div>';
+    } else {
+      // Tab biasa
+      const onclick = el.getAttribute('onclick') || '';
+      const aktif = el.classList.contains('active') ? 'active' : '';
+      itemsHTML += `<button class="nav-drawer-item ${aktif}" onclick="${onclick};tutupDrawer()">${el.textContent}</button>`;
+    }
+  });
+
+  // Cipta drawer
+  const drawer = document.createElement('div');
+  drawer.id = 'nav-drawer';
+  drawer.className = 'nav-drawer';
+  drawer.innerHTML = `
+    <div class="nav-drawer-overlay" onclick="tutupDrawer()"></div>
+    <div class="nav-drawer-panel">
+      <div class="nav-drawer-head">
+        <div class="nav-drawer-head-info">
+          <div class="nav-drawer-head-nama">${avatar}</div>
+          <div class="nav-drawer-head-badge">${badge}</div>
+        </div>
+        <button class="nav-drawer-close" onclick="tutupDrawer()">✕</button>
+      </div>
+      <div class="nav-drawer-body">${itemsHTML}</div>
+      <div class="nav-drawer-foot">
+        <button class="btn-logout" onclick="doLogout()">↩ Keluar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(drawer);
+
+  // Tambah butang hamburger dalam nav jika belum ada
+  if (!document.querySelector('.nav-hamburger')) {
+    const nav = document.querySelector('nav');
+    if (nav) {
+      const hbtn = document.createElement('button');
+      hbtn.className = 'nav-hamburger';
+      hbtn.setAttribute('aria-label', 'Menu');
+      hbtn.innerHTML = '<span></span><span></span><span></span>';
+      hbtn.onclick = bukaDrawer;
+      nav.appendChild(hbtn);
+    }
+  }
+}
+
+function bukaDrawer() {
+  const d = document.getElementById('nav-drawer');
+  if (d) d.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function tutupDrawer() {
+  const d = document.getElementById('nav-drawer');
+  if (d) d.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Kemaskini active state dalam drawer
+const _origSetTab = setTab;
+function setTab(btn, page) {
+  _origSetTab(btn, page);
+  // Kemaskini drawer active
+  const drawer = document.getElementById('nav-drawer');
+  if (!drawer) return;
+  drawer.querySelectorAll('.nav-drawer-item, .nav-drawer-sub').forEach(b => b.classList.remove('active'));
+  drawer.querySelectorAll('.nav-drawer-item, .nav-drawer-sub').forEach(b => {
+    if ((b.getAttribute('onclick') || '').includes("'"+page+"'")) b.classList.add('active');
+  });
+}
+
+// Init drawer selepas DOM ready
+window.addEventListener('load', function() {
+  setTimeout(_initDrawer, 300);
+});
 
 // ── FORMAT TARIKH
 function fmtTarikh(ts) {
