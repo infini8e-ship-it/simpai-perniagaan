@@ -410,6 +410,46 @@ window.addEventListener('load', function() {
   }, 300);
 });
 
+// ── CHART.JS MOBILE PATCH
+window.addEventListener('load', function() {
+  if (typeof Chart === 'undefined') return;
+  const _origChart = Chart;
+  // Patch defaults
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.plugins = Chart.defaults.plugins || {};
+  Chart.defaults.plugins.legend = Chart.defaults.plugins.legend || {};
+  Chart.defaults.plugins.legend.position = 'top';
+  // Tinggi default untuk mobile
+  if (window.innerWidth <= 768) {
+    Chart.defaults.aspectRatio = 1.5;
+  }
+});
+
+// ── AUTO LOGOUT (15 minit idle)
+(function() {
+  const MASA_IDLE = 15 * 60 * 1000;
+  var _idleTimer;
+
+  function resetIdle() {
+    clearTimeout(_idleTimer);
+    _idleTimer = setTimeout(function() {
+      if (!sessionStorage.getItem('simp_user')) return;
+      tunjukToast('⏱️ Sesi tamat. Log masuk semula.', 'warn', 4000);
+      setTimeout(function() {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+      }, 2000);
+    }, MASA_IDLE);
+  }
+
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev) {
+    document.addEventListener(ev, resetIdle, { passive: true });
+  });
+
+  resetIdle();
+})();
+
 // ── FORMAT TARIKH
 function fmtTarikh(ts) {
   if (!ts) return '—';

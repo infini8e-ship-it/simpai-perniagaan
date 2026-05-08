@@ -851,6 +851,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
@@ -2694,7 +2695,15 @@ function renderChart1() {
     data: { labels: ppdList.map(p => p.replace('PPD ','')), datasets },
     options: {
       responsive: true,
-      plugins: { legend: { position: 'top' } },
+      plugins: {
+        legend: { position: 'top' },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          font: { size: 10, weight: '700' },
+          color: '#374151',
+          formatter: (v) => v !== null ? v : ''
+        }
+      },
       scales: {
         y: { beginAtZero: true,
           min: 0,
@@ -2702,7 +2711,8 @@ function renderChart1() {
           title: { display: true, text: metrik.toUpperCase() } },
         x: { title: { display: true, text: 'PPD' } }
       }
-    }
+    },
+    plugins: [ChartDataLabels]
   });
 }
 
@@ -2738,15 +2748,25 @@ function renderChart2() {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          font: { size: 11, weight: '700' },
+          color: '#374151',
+          formatter: (v) => v !== null ? v : ''
+        }
+      },
       scales: {
         y: { beginAtZero: true,
           min: 0,
-          max: metrik === 'gpmp' ? 9 : undefined,
+          max: metrik === 'gpmp' ? 10 : undefined,
+          grace: '10%',
           title: { display: true, text: metrik.toUpperCase() } },
         x: { title: { display: true, text: 'Jenis Pentaksiran' } }
       }
-    }
+    },
+    plugins: [ChartDataLabels]
   });
 }
 
