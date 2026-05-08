@@ -323,13 +323,13 @@ function _initDrawer() {
       const label = el.querySelector('.nav-drop-btn').textContent.replace('▾','').trim();
       itemsHTML += `<div class="nav-drawer-group-label">${label}</div>`;
       el.querySelectorAll('.nav-drop-menu button').forEach(btn => {
-        const onclick = btn.getAttribute('onclick') || '';
+        const onclick = (btn.getAttribute('onclick') || '').replace(/setTab\(this,/g, "setTabMobile(");
         itemsHTML += `<button class="nav-drawer-sub" onclick="${onclick};tutupDrawer()">${btn.textContent}</button>`;
       });
       itemsHTML += '<div class="nav-drawer-divider"></div>';
     } else {
       // Tab biasa
-      const onclick = el.getAttribute('onclick') || '';
+      const onclick = (el.getAttribute('onclick') || '').replace(/setTab\(this,/g, "setTabMobile(");
       const aktif = el.classList.contains('active') ? 'active' : '';
       itemsHTML += `<button class="nav-drawer-item ${aktif}" onclick="${onclick};tutupDrawer()">${el.textContent}</button>`;
     }
@@ -370,15 +370,23 @@ function _initDrawer() {
   }
 }
 
+function setTabMobile(page) {
+  // Cari nav-tab atau nav-drop-menu button yang sepadan
+  let btn = document.querySelector('.nav-tab[onclick*="\''+page+'\'"]');
+  if (!btn) btn = document.querySelector('.nav-drop-menu button[onclick*="\''+page+'\'"]');
+  if (!btn) btn = document.querySelector('.nav-tabs .nav-drop-btn');
+  setTab(btn || document.querySelector('.nav-tab'), page);
+}
+
 function bukaDrawer() {
   const d = document.getElementById('nav-drawer');
-  if (d) d.classList.add('open');
+  if (d) { d.classList.add('open'); d.style.pointerEvents = ''; }
   document.body.style.overflow = 'hidden';
 }
 
 function tutupDrawer() {
   const d = document.getElementById('nav-drawer');
-  if (d) d.classList.remove('open');
+  if (d) { d.classList.remove('open'); d.style.pointerEvents = 'none'; }
   document.body.style.overflow = '';
 }
 
@@ -397,7 +405,10 @@ function setTab(btn, page) {
 
 // Init drawer selepas DOM ready
 window.addEventListener('load', function() {
-  setTimeout(_initDrawer, 300);
+  setTimeout(function() {
+    _initDrawer();
+    tutupDrawer();
+  }, 300);
 });
 
 // ── FORMAT TARIKH
