@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIMP-Ai: PERNIAGAAN — PPD</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="ppd.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="setTab(this,'dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="setTab(this,'sekolah')">🏫 Sekolah</button>
+    <button class="nav-tab" onclick="setTab(this,'pengguna')">👥 Pengguna</button>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">🔬 Analisis ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'analisis')">🔬 Analisis Daerah</button>
+        <button onclick="setTab(this,'ranking')">📊 Prestasi Daerah</button>
+        <button onclick="setTab(this,'prestasi-spm');muatPrestasiPPD()">🏆 Sejarah Prestasi</button>
+      </div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge nb-ppd" id="nav-badge">PPD</span>
+    <div class="nav-avatar" id="nav-avatar">—</div>
+    <button class="btn-logout" onclick="doLogout()">↩ Keluar</button>
+  </div>
+</nav>
+<main>
+
+<!-- DASHBOARD -->
+<div class="page show" id="page-dashboard">
+  <div class="sec-hd">
+    <div><div class="sec-title" id="greeting">Dashboard PPD 🏢</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
+    <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=analisis]'),'analisis')">🔬 Analisis Daerah</button>
+  </div>
+  <div class="stats-row stats-3">
+    <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">🏫</div></div><div class="stat-val" id="s-sekolah">—</div><div class="stat-lbl">Sekolah Dalam Daerah</div></div>
+    <div class="stat-card sc-em"><div class="stat-top"><div class="stat-ico">👩‍🎓</div></div><div class="stat-val" id="s-murid">—</div><div class="stat-lbl">Murid Direkod</div></div>
+    <div class="stat-card sc-ro"><div class="stat-top"><div class="stat-ico">⚠️</div></div><div class="stat-val" id="s-risiko">—</div><div class="stat-lbl">Murid Berisiko</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">🏫 Status Kemaskini Sekolah</div><button class="btn-ghost" onclick="muatStatusSync()">🔄</button></div>
+    <div class="card-body" style="padding:0" id="sync-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+
+<!-- SEKOLAH DAERAH -->
+<div class="page" id="page-sekolah">
+  <div class="sec-hd"><div><div class="sec-title">Sekolah Daerah 🏫</div><div class="sec-sub" id="skl-sub">—</div></div></div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Senarai Sekolah <span class="chip" id="skl-count">—</span></div></div>
+    <div class="card-body" style="padding:0" id="skl-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+
+<!-- PENGGUNA -->
+<div class="page" id="page-pengguna">
+  <div class="sec-hd"><div><div class="sec-title">Pengguna Daerah 👥</div></div><button class="btn-primary" onclick="bukaModal('modal-user')">+ Tambah</button></div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Pengguna <span class="chip" id="usr-count">—</span></div></div>
+    <div class="card-body" style="padding:0" id="usr-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+
+<!-- ANALISIS DAERAH -->
+<div class="page" id="page-analisis">
+  <div class="sec-hd"><div><div class="sec-title">Analisis Daerah 🔬</div></div></div>
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <button class="sub-tab active" id="ppd-stab-item" onclick="setPPDSubTab('item')">🔬 Analisis Item</button>
+    <button class="sub-tab" id="ppd-stab-prestasi" onclick="setPPDSubTab('prestasi')">🏆 Sejarah Prestasi</button>
+  </div>
+  <div id="ppd-sub-item">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-3">
+        <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="af-ting"><option value="">Semua</option><option value="4">T4</option><option value="5">T5</option></select></div>
+        <div class="form-group"><label class="form-label">Jenis</label><select class="form-select" id="af-jenis"><option value="">Semua</option><option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option><option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option><option value="PERCUBAAN SPM">PSPM</option></select></div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2025">2025</option></select></div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Sekolah (pilihan)</label>
+          <select class="form-select" id="af-sekolah"><option value="">Semua Sekolah</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="af-cari-sekolah" placeholder="Taip kod atau nama sekolah..." oninput="cariSekolahAnalisis()">
+        </div>
+      </div>
+      <div style="margin-top:14px"><button class="btn-primary" onclick="muatAnalisis()">🔍 Papar Analisis</button></div>
+    </div>
+  </div>
+  <div id="analisis-result"><div class="empty-state card" style="padding:40px"><div class="ico">🔬</div><p>Pilih parameter dan klik Papar.</p></div></div>
+  </div><!-- /ppd-sub-item -->
+
+  <div id="ppd-sub-prestasi" style="display:none">
+    <div id="ppd-prestasi-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+
+<!-- PRESTASI DAERAH -->
+<div class="page" id="page-ranking">
+  <div class="sec-hd">
+    <div><div class="sec-title">Prestasi Daerah 📊</div><div class="sec-sub" id="pd-sub">—</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-3">
+        <div class="form-group"><label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="pd-jenis">
+            <option value="">Semua</option>
+            <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+            <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+            <option value="PERCUBAAN SPM">PSPM</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="pd-ting">
+            <option value="">Semua</option>
+            <option value="4">Tingkatan 4</option>
+            <option value="5">Tingkatan 5</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tahun</label>
+          <select class="form-select" id="pd-tahun">
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+        <div class="form-group form-full"><label class="form-label">Sekolah (pilihan)</label>
+          <select class="form-select" id="pd-sekolah"><option value="">Semua Sekolah</option></select>
+        </div>
+      </div>
+      <div style="margin-top:14px"><button class="btn-primary" onclick="muatPrestasi()">📊 Papar Prestasi</button></div>
+    </div>
+  </div>
+  <div id="prestasi-result"><div class="empty-state card" style="padding:40px"><div class="ico">📊</div><p>Pilih parameter dan klik Papar Prestasi.</p></div></div>
+</div>
+<!-- SEJARAH PRESTASI SPM -->
+<div class="page" id="page-prestasi-spm">
+  <div class="sec-hd">
+    <div><div class="sec-title">Sejarah Prestasi SPM 🏆</div><div class="sec-sub" id="ppd-prestasi-sub">Pencapaian SPM Perniagaan</div></div>
+    <button class="btn-ghost" onclick="muatPrestasiPPD(true)">🔄 Muat Semula</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="spm-jenis">
+            <option value="">Semua</option>
+            <option value="PSPM">PSPM</option>
+            <option value="PASA">PASA</option>
+            <option value="PPSA">PPSA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="spm-cari" placeholder="Taip nama sekolah..." oninput="tapis_spm_ppd()">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="ppd-spm-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<!-- MODAL TAMBAH PENGGUNA -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">👤 Tambah Pengguna</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">ID</label><input class="form-input" id="u-id" placeholder="nama.sekolah"></div>
+        <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="u-nama"></div>
+        <div class="form-group"><label class="form-label">Kata Laluan</label><input class="form-input" id="u-pw"></div>
+        <div class="form-group"><label class="form-label">Peranan</label>
+          <select class="form-select" id="u-peranan" onchange="toggleUField()">
+            <option value="SEKOLAH">Guru</option><option value="JU_DAERAH">JU Daerah</option>
+          </select>
+        </div>
+        <div class="form-group form-full" id="u-skl-wrap"><label class="form-label">Sekolah</label><select class="form-select" id="u-sekolah"></select></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" onclick="simpanUser()">Simpan</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="app.js"></script>
+<script src="analisis.js"></script>
+<script>
+var _ppdNama='';
+
+window.addEventListener('load',async()=>{
+  const ok=await semakSession('PPD'); if(!ok) return;
+  _ppdNama=STATE.ppd||'';
+  await initNavbar(_ppdNama||'PPD','nb-ppd');
+  document.getElementById('greeting').textContent=salamMasa()+', '+STATE.nama.split(' ')[0]+' 🏢';
+  document.getElementById('dash-sub').textContent=_ppdNama+' · Sesi 2026';
+  document.getElementById('nav-badge').textContent=_ppdNama||'PPD';
+  await Promise.all([muatStat(),muatStatusSync(),muatSekolahDaerah(),muatPenggunaDaerah()]);
+});
+
+function _ppdKod(){return 'PPD_'+(_ppdNama||'').replace('PPD ','').replace(/ /g,'_').toUpperCase();}
+
+async function muatStat(){
+  const[{count:cSkl},{count:cMurid},{count:cRisiko}]=await Promise.all([
+    db.from('sekolah').select('*',{count:'exact',head:true}).eq('kod_ppd',_ppdKod()),
+    db.from('skor_master').select('*',{count:'exact',head:true}).eq('ppd',_ppdNama),
+    db.from('skor_master').select('*',{count:'exact',head:true}).eq('ppd',_ppdNama).or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
+  ]);
+  document.getElementById('s-sekolah').textContent=cSkl||0;
+  document.getElementById('s-murid').textContent=fmtN(cMurid);
+  document.getElementById('s-risiko').textContent=fmtN(cRisiko);
+}
+
+async function muatStatusSync(){
+  const{data:sklList}=await db.from('sekolah').select('kod_sekolah,nama_sekolah').eq('kod_ppd',_ppdKod());
+  if(!sklList?.length) return;
+  const rows=await Promise.all(sklList.map(async s=>{
+    const{count}=await db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',s.kod_sekolah);
+    return{...s,murid:count||0};
+  }));
+  document.getElementById('sync-body').innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>Sekolah</th><th>Murid</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="font-weight:600">${r.nama_sekolah}</td>
+        <td style="font-family:var(--ffm)">${fmtN(r.murid)}</td>
+        <td><span class="sp ${r.murid>0?'sp-ok':'sp-warn'}">${r.murid>0?'✓ Dikemaskini':'⏳ Belum Dikemaskini'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function muatSekolahDaerah(){
+  const{data}=await db.from('sekolah').select('*').eq('kod_ppd',_ppdKod()).order('nama_sekolah');
+  const list=data||[];
+  _sklDaerah=list;
+  const sel=document.getElementById('af-sekolah');
+  if(sel){ sel.innerHTML='<option value="">Semua Sekolah</option>'+list.map(s=>`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`).join(''); }
+  document.getElementById('skl-count').textContent=list.length+' sekolah';
+  document.getElementById('skl-sub').textContent=_ppdNama;
+  document.getElementById('skl-body').innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>Kod</th><th>Nama Sekolah</th><th>Status</th></tr></thead>
+      <tbody>${list.map(s=>`<tr>
+        <td style="font-family:var(--ffm)">${s.kod_sekolah}</td>
+        <td style="font-weight:600">${s.nama_sekolah}</td>
+        <td><span class="sp sp-ok">✓ Aktif</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  document.getElementById('u-sekolah').innerHTML=list.map(s=>`<option value="${s.kod_sekolah}">${s.nama_sekolah}</option>`).join('');
+  const pdSkl=document.getElementById('pd-sekolah');
+  if(pdSkl) pdSkl.innerHTML='<option value="">Semua Sekolah</option>'+list.map(s=>`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`).join('');
+}
+
+async function muatPenggunaDaerah(){
+  const{data}=await db.from('pengguna').select('*').eq('ppd',_ppdNama).order('peranan');
+  const list=data||[];
+  document.getElementById('usr-count').textContent=list.length+' pengguna';
+  document.getElementById('usr-body').innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Nama</th><th>Peranan</th><th>Sekolah</th><th>Status</th></tr></thead>
+      <tbody>${list.map(u=>`<tr>
+        <td style="font-family:var(--ffm);font-weight:700">${u.id}</td>
+        <td style="font-weight:600">${u.nama}</td>
+        <td><span class="chip">${u.peranan}</span></td>
+        <td style="font-size:12px;color:var(--sub)">${u.kod_sekolah||'—'}</td>
+        <td><span class="sp ${u.status==='AKTIF'?'sp-ok':'sp-err'}">${u.status}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function toggleUField(){
+  const p=document.getElementById('u-peranan').value;
+  document.getElementById('u-skl-wrap').style.display=p==='SEKOLAH'?'block':'none';
+}
+
+async function simpanUser(){
+  const p=document.getElementById('u-peranan').value;
+  const payload={id:document.getElementById('u-id').value.trim(),nama:document.getElementById('u-nama').value.trim(),kata_laluan:document.getElementById('u-pw').value.trim(),peranan:p,ppd:_ppdNama,status:'AKTIF',kod_sekolah:p==='SEKOLAH'?document.getElementById('u-sekolah').value:null};
+  if(!payload.id||!payload.nama||!payload.kata_laluan){tunjukToast('⚠️ Sila isi maklumat wajib.','warn');return;}
+  const{error}=await db.from('pengguna').insert(payload);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ Pengguna ditambah.','success');muatPenggunaDaerah();
+}
+
+var _sklDaerah=[];
+function cariSekolahAnalisis(){
+  const cari=(document.getElementById('af-cari-sekolah').value||'').toLowerCase();
+  const sel=document.getElementById('af-sekolah');
+  sel.innerHTML='<option value="">Semua Sekolah</option>';
+  let senarai=_sklDaerah;
+  if(cari) senarai=senarai.filter(s=>s.kod_sekolah.toLowerCase().includes(cari)||s.nama_sekolah.toLowerCase().includes(cari));
+  senarai.forEach(s=>{ sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`; });
+}
+
+async function muatAnalisis(){
+  const tingkatan=document.getElementById('af-ting').value;
+  const jenisPentaksiran=document.getElementById('af-jenis').value;
+  const tahun=document.getElementById('af-tahun').value;
+  const sklVal=document.getElementById('af-sekolah')?.value||'';
+  const sklNama=document.getElementById('af-sekolah')?.options[document.getElementById('af-sekolah').selectedIndex]?.text||'';
+  const params={tingkatan,jenisPentaksiran,tahun,ppd:_ppdNama,sekolah:sklVal};
+  const sklTeks=sklVal ? sklNama.replace(/^.*? — /,'') : 'Semua Sekolah';
+  window._cetakParams={
+    tingkatan,
+    jenisPentaksiran:jenisPentaksiran||'Semua',
+    tahun,
+    ppd:_ppdNama,
+    sekolah:sklTeks,
+    kelas:''
+  };
+  await muatAnalisisSupa(params,'PPD','analisis-result');
+}
+
+async function muatPrestasi(){
+  const jenis=document.getElementById('pd-jenis').value;
+  const ting=document.getElementById('pd-ting').value;
+  const tahun=document.getElementById('pd-tahun').value;
+  const sklVal=document.getElementById('pd-sekolah').value;
+  const sklSel=document.getElementById('pd-sekolah');
+  const sklNama=sklSel.options[sklSel.selectedIndex]?.text||'Semua Sekolah';
+  document.getElementById('pd-sub').textContent=_ppdNama+(sklVal?' · '+sklNama:'')+(jenis?' · '+kodJenis(jenis):'')+(ting?' · T'+ting:'')+(tahun?' · '+tahun:'');
+
+  const el=document.getElementById('prestasi-result');
+  el.innerHTML='<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+
+  // Query skor_master
+  let q=db.from('skor_master').select('nama_sekolah,kod_sekolah,gred,markah_wajaran').eq('ppd',_ppdNama);
+  if(jenis) q=q.eq('jenis_pentaksiran',jenis);
+  if(ting) q=q.eq('tingkatan',ting);
+  if(tahun) q=q.eq('tahun',tahun);
+  if(sklVal) q=q.eq('kod_sekolah',sklVal);
+  const{data}=await q;
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">📊</div><p>Tiada data untuk parameter ini.</p></div>';
+    return;
+  }
+
+  // Kira GPMP per sekolah
+  const nilaiGred={'A+':0,'A':1,'A-':2,'B+':3,'B':4,'C+':5,'C':6,'D':7,'E':8,'G':9};
+  const sklMap={};
+  data.forEach(m=>{
+    if(!sklMap[m.kod_sekolah]) sklMap[m.kod_sekolah]={nama:m.nama_sekolah,kod:m.kod_sekolah,gredList:[],markahList:[]};
+    if(m.gred&&m.gred!=='TH') sklMap[m.kod_sekolah].gredList.push(m.gred);
+    if(m.markah_wajaran) sklMap[m.kod_sekolah].markahList.push(m.markah_wajaran);
+  });
+  const sklArr=Object.values(sklMap).map(s=>{
+    const vals=s.gredList.map(g=>nilaiGred[g]??9);
+    const gpmp=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:9;
+    const purata=s.markahList.length?s.markahList.reduce((a,b)=>a+b,0)/s.markahList.length:0;
+    return{...s,gpmp:gpmp,purata:purata,duduki:s.gredList.length};
+  }).sort((a,b)=>a.gpmp-b.gpmp);
+
+  // Kira taburan gred keseluruhan
+  const gredKira={'A+':0,'A':0,'A-':0,'B+':0,'B':0,'C+':0,'C':0,'D':0,'E':0,'G':0};
+  data.forEach(m=>{if(m.gred&&gredKira[m.gred]!==undefined) gredKira[m.gred]++;});
+  const totalGred=Object.values(gredKira).reduce((a,b)=>a+b,0);
+
+  const medal=['🥇','🥈','🥉'];
+  const maxGpmp=Math.max(...sklArr.map(s=>s.gpmp))||9;
+
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-head"><div class="card-title">🏆 Ranking Sekolah — GPMP</div><span class="chip">${sklArr.length} sekolah</span></div>
+      <div class="card-body" style="padding:0">
+        <div style="padding:10px 16px;font-size:11px;color:var(--sub)">Semakin rendah GPMP = prestasi lebih baik</div>
+        ${sklArr.map((s,i)=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border)">
+            <div style="font-size:${i<3?'18px':'13px'};width:28px;text-align:center">${medal[i]||i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${s.nama}</div>
+              <div style="font-size:11px;color:var(--sub)">${s.kod} · ${s.duduki} murid</div>
+            </div>
+            <div style="width:120px">
+              <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden">
+                <div style="height:100%;border-radius:99px;background:${i===0?'var(--emerald)':i===1?'var(--cyan)':i===2?'var(--amber)':'var(--muted)'};width:${Math.round((1-s.gpmp/9)*100)}%"></div>
+              </div>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:${i===0?'var(--emerald)':i===1?'var(--cyan)':i===2?'var(--amber)':'var(--sub)'};width:36px;text-align:right">${s.gpmp.toFixed(2)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">🎓 Taburan Gred</div></div>
+        <div style="position:relative;width:100%;height:180px"><canvas id="pd-pie" role="img" aria-label="Taburan gred murid daerah">Taburan gred keseluruhan daerah</canvas></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${[['A+/A/A-','#059669'],['B+/B','#0891b2'],['C+/C','#d97706'],['D','#f97316'],['E/G','#e11d48']].map(([l,c])=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--sub)"><span style="width:10px;height:10px;border-radius:2px;background:${c}"></span>${l}</span>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📈 GP Per Sekolah</div></div>
+        <div style="position:relative;width:100%;height:180px"><canvas id="pd-bar" role="img" aria-label="GPMP setiap sekolah dalam daerah">GPMP setiap sekolah</canvas></div>
+      </div>
+    </div>`;
+
+  // Chart pie
+  const aGred=(gredKira['A+']+gredKira['A']+gredKira['A-']);
+  const bGred=(gredKira['B+']+gredKira['B']);
+  const cGred=(gredKira['C+']+gredKira['C']);
+  const dGred=gredKira['D'];
+  const eGred=(gredKira['E']+gredKira['G']);
+  setTimeout(()=>{
+    if(window._pdPie) window._pdPie.destroy();
+    if(window._pdBar) window._pdBar.destroy();
+    window._pdPie=new Chart(document.getElementById('pd-pie'),{
+      type:'doughnut',
+      data:{labels:['A+/A/A-','B+/B','C+/C','D','E/G'],datasets:[{data:[aGred,bGred,cGred,dGred,eGred],backgroundColor:['#059669','#0891b2','#d97706','#f97316','#e11d48'],borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+    });
+    window._pdBar=new Chart(document.getElementById('pd-bar'),{
+      type:'bar',
+      data:{
+        labels:sklArr.map(s=>s.nama.replace(/^SMK /,'').substring(0,12)),
+        datasets:[{label:'GPMP',data:sklArr.map(s=>parseFloat(s.gpmp.toFixed(2))),backgroundColor:sklArr.map((_,i)=>i===0?'#059669':i===1?'#0891b2':i===2?'#d97706':'#94a3b8'),borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:10,weight:'700'},color:'#374151',formatter:(v)=>v!==null?v:''}},scales:{y:{min:0,max:10,grace:'10%',ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxRotation:30,autoSkip:false}}}},
+      plugins:[ChartDataLabels]
+    });
+  },100);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
+// ── SUB TAB PPD
+function setPPDSubTab(nama) {
+  document.getElementById('ppd-sub-item').style.display = nama === 'item' ? '' : 'none';
+  document.getElementById('ppd-sub-prestasi').style.display = nama === 'prestasi' ? '' : 'none';
+  document.getElementById('ppd-stab-item').classList.toggle('active', nama === 'item');
+  document.getElementById('ppd-stab-prestasi').classList.toggle('active', nama === 'prestasi');
+  if (nama === 'prestasi') muatPrestasiPPD();
+}
+
+// ── MUAT SEJARAH PRESTASI PPD
+var _rawSpmPPD = [];
+async function muatPrestasiPPD(forceRefresh = false) {
+  const elBody = document.getElementById('ppd-prestasi-body') || document.getElementById('ppd-spm-result');
+  if (!elBody) return;
+  elBody.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div><p style="margin-top:8px;color:var(--muted);font-size:13px">Memuatkan data SPM...</p></div>';
+
+  if (forceRefresh) localStorage.removeItem('simp_spm_cache');
+  const semua = await muatDataSPM();
+
+  _rawSpmPPD = semua.filter(r =>
+    r['mata pelajaran'] === 'PERNIAGAAN' &&
+    r['ppd'] === STATE.ppd
+  );
+
+  const subEl = document.getElementById('ppd-prestasi-sub');
+  if (subEl) subEl.textContent = `Pencapaian SPM Perniagaan — ${STATE.ppd || '—'}`;
+
+  _renderSpmPPD();
+}
+
+function tapis_spm_ppd() {
+  _renderSpmPPD();
+}
+
+function _renderSpmPPD() {
+  const elBody = document.getElementById('ppd-prestasi-body') || document.getElementById('ppd-spm-result');
+  if (!elBody) return;
+  const jenis = (document.getElementById('spm-jenis') || {}).value || '';
+  const cari = ((document.getElementById('spm-cari') || {}).value || '').toLowerCase();
+
+  let data = _rawSpmPPD;
+  window._filteredSpmPPD = data;
+  if (jenis) data = data.filter(r => r['jenis pentaksiran'].includes(jenis));
+  if (cari) data = data.filter(r => (r['nama sekolah'] || '').toLowerCase().includes(cari));
+  window._filteredSpmPPD = data;
+
+  if (!data.length) {
+    elBody.innerHTML = '<div class="empty-state card" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
+    return;
+  }
+  elBody.innerHTML = '<div id="spm-table-ppd"></div>';
+  renderJadualSPM(data, 'spm-table-ppd');
+}
+
+// ── NAV DROPDOWN HOVER
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(dd) {
+    var closeTimer;
+    dd.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      var menu = dd.querySelector('.nav-drop-menu');
+      var rect = dd.getBoundingClientRect();
+      menu.style.cssText = 'display:block !important;position:fixed !important;top:'+(rect.bottom)+'px !important;left:'+rect.left+'px !important;z-index:99999 !important;background:white !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 8px 24px rgba(0,0,0,.15) !important;min-width:190px !important;padding:6px 0 !important';
+    });
+    dd.addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 150);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 100);
+    });
+  });
+});
+</script>
+</body>
+</html>

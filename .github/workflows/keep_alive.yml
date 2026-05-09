@@ -1,0 +1,15 @@
+name: Supabase Keep Alive
+on:
+  schedule:
+    - cron: '0 0 */3 * *' # Berjalan setiap 3 hari
+  workflow_dispatch:      # Butang manual di GitHub
+
+jobs:
+  ping_supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Menghantar Isyarat ke Pangkalan Data
+        run: |
+          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/pengguna?select=id&limit=1" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"

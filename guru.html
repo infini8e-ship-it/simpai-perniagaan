@@ -11,10 +11,16 @@
   <a class="nav-brand" href="guru.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">🏠 Dashboard</button>
-    <button class="nav-tab" onclick="setTab(this,'murid')">👥 Senarai Murid</button>
-    <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak Analisis</button>
-    <button class="nav-tab" onclick="setTab(this,'analisis')">📊 Analisis Sekolah</button>
-    <button class="nav-tab" onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
+    <button class="nav-tab" onclick="setTab(this,'murid');resetViewMurid()">👥 Senarai Murid</button>
+    <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak</button>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">📊 Analisis ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'analisis');setSubTab('item')">📊 Analisis Sekolah</button>
+        <button onclick="setTab(this,'berisiko')">⚠️ Murid Berisiko</button>
+        <button onclick="setTab(this,'sasaran-murid');muatSasaranMurid()">🎯 Sasaran Murid</button>
+      </div>
+    </div>
   </div>
   <div class="nav-right">
     <span class="nav-badge nb-guru" id="nav-badge">GURU</span>
@@ -29,7 +35,14 @@
 <div class="page show" id="page-dashboard">
   <div class="sec-hd">
     <div><div class="sec-title" id="greeting">Dashboard Guru ✏️</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
-    <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=tapak]'),'tapak')">+ Jana Tapak</button>
+    </div>
+  <div id="panel-kemaskini" style="display:none;margin-bottom:16px">
+    <div class="alert alert-warn" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700">
+        🔔 <span id="kemaskini-count"></span> tapak belum dikemaskini ke JPN
+      </div>
+      <div id="kemaskini-list" style="width:100%;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </div>
   <div class="stats-row stats-3">
     <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">📋</div></div><div class="stat-val" id="s-tapak">—</div><div class="stat-lbl">Tapak Analisis</div></div>
@@ -63,9 +76,10 @@
 <div class="page" id="page-tapak">
   <div class="sec-hd">
     <div><div class="sec-title">Tapak Analisis 📋</div><div class="sec-sub">Urus tapak Google Sheets markah murid</div></div>
-    <button class="btn-primary" onclick="bukaModal('modal-jana')">+ Jana Tapak Baharu</button>
+    <button class="btn-primary" onclick="bukaModalJana()">+ Jana Tapak Baharu</button>
   </div>
-  <div class="alert alert-info">ℹ️ Tapak analisis adalah fail Google Sheets untuk isi markah murid. Setelah diisi, klik <strong>Sync</strong> untuk hantar ke pangkalan data JPN.</div>
+  <div class="alert alert-info">1️⃣ Tapak analisis adalah fail Google Sheets untuk isi markah murid. Setelah diisi, klik <strong>Kemaskini</strong> untuk hantar ke pangkalan data JPN.</div>
+  <div class="alert alert-info">2️⃣ Untuk tambah atau padam murid selepas tapak dijana, buat perubahan terus dalam Google Sheets tapak berkenaan.</div>
   <div class="card">
     <div class="card-head"><div class="card-title">📋 Senarai Tapak <span class="chip" id="tapak-count">—</span></div><button class="btn-ghost" onclick="muatTapak()">🔄</button></div>
     <div class="card-body" style="padding:0" id="tapak-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
@@ -75,17 +89,76 @@
 <!-- ANALISIS -->
 <div class="page" id="page-analisis">
   <div class="sec-hd"><div><div class="sec-title">Analisis Sekolah 📊</div></div></div>
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <button class="sub-tab active" id="stab-item" onclick="setSubTab('item')">📊 Analisis Item</button>
+    <button class="sub-tab" id="stab-prestasi-guru" onclick="setSubTab('prestasi-guru')">🏆 Sejarah Prestasi</button>
+  </div>
+  <div id="sub-item">
   <div class="card" style="margin-bottom:16px">
     <div class="card-body">
       <div class="form-grid form-grid-3">
         <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="af-ting"><option value="">Semua</option><option value="4">T4</option><option value="5">T5</option></select></div>
         <div class="form-group"><label class="form-label">Jenis</label><select class="form-select" id="af-jenis"><option value="">Semua</option><option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option><option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option><option value="PERCUBAAN SPM">PSPM</option></select></div>
-        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option></select></div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select></div>
       </div>
       <div style="margin-top:14px"><button class="btn-primary" onclick="muatAnalisis()">🔍 Papar Analisis</button></div>
     </div>
   </div>
   <div id="analisis-result"><div class="empty-state card" style="padding:40px"><div class="ico">📊</div><p>Pilih parameter dan klik Papar.</p></div></div>
+  </div><!-- /sub-item -->
+
+  <div id="sub-prestasi-guru" style="display:none">
+    <div class="sec-hd">
+      <div><div class="sec-sub">Pencapaian SPM Perniagaan — <span id="nama-sekolah-prestasi">—</span></div></div>
+      
+    </div>
+    <div class="card" style="margin-bottom:16px;overflow:visible">
+      <div class="card-body" style="overflow:visible">
+        <div class="form-grid form-grid-2" style="margin-bottom:12px;overflow:visible">
+          <div class="form-group">
+            <label class="form-label">Jenis Pentaksiran</label>
+            <div class="dropdown-check" id="guru-pentaksiran-wrap">
+              <button class="dropdown-check-btn" onclick="toggleDropdownCheck('guru-ddc')">
+                <span id="guru-ddc-label">Semua Pentaksiran</span> ▾
+              </button>
+              <div class="dropdown-check-list" id="guru-ddc" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" onclick="tapis_spm_guru()">🔍 Papar</button>
+          <button class="btn-ghost" onclick="resetTapisanGuru()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+    <div id="guru-spm-kad" style="display:none;margin-bottom:16px">
+      <div class="stats-row stats-5">
+        <div class="stat-card sc-in"><div class="stat-val" id="gk-duduki">—</div><div class="stat-lbl">Bil Duduki</div></div>
+        <div class="stat-card sc-em"><div class="stat-val" id="gk-a">—</div><div class="stat-lbl">% A</div></div>
+        <div class="stat-card sc-cy"><div class="stat-val" id="gk-kredit">—</div><div class="stat-lbl">% Kredit</div></div>
+        <div class="stat-card sc-am"><div class="stat-val" id="gk-lulus">—</div><div class="stat-lbl">% Lulus</div></div>
+        <div class="stat-card sc-ro"><div class="stat-val" id="gk-gpmp">—</div><div class="stat-lbl">GPMP</div></div>
+      </div>
+    </div>
+    <div class="card" id="guru-chart-wrap" style="display:none;margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-title">📈 Trend Prestasi Sekolah</div>
+        <select class="form-select" id="guru-c-metrik" style="width:140px" onchange="renderChartGuru()">
+          <option value="gpmp">GPMP</option>
+          <option value="%a">% A</option>
+          <option value="% kredit">% Kredit</option>
+          <option value="%lulus">% Lulus</option>
+        </select>
+      </div>
+      <div class="card-body"><canvas id="chart-guru" height="100"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📋 Rekod Prestasi</div></div>
+      <div id="guru-spm-result" style="padding:16px">
+        <div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Pilih parameter dan klik Papar.</p></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MURID BERISIKO -->
@@ -96,6 +169,7 @@
 
 <!-- SENARAI MURID -->
 <div class="page" id="page-murid">
+  <div class="alert alert-info">ℹ️ Senarai murid ini digunakan untuk jana tapak sahaja. Selepas tapak dijana, sebarang perubahan murid perlu dibuat terus dalam Google Sheets tapak berkenaan.</div>
   <div class="sec-hd">
     <div><div class="sec-title">Senarai Murid 👥</div><div class="sec-sub" id="sm-page-sub">Senarai kelas sekolah anda</div></div>
     <button class="btn-primary" id="btn-tambah-kelas" onclick="paparFormCari()">+ Tambah Kelas</button>
@@ -125,6 +199,14 @@
           <div class="form-group">
             <label class="form-label">Nama Kelas</label>
             <input class="form-input" id="sm-kelas" placeholder="Contoh: 5 PERNIAGAAN 1" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun</label>
+            <select class="form-select" id="sm-tahun">
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
             <button class="btn-primary" style="width:100%" onclick="cariMurid()">🔍 Muat / Cari</button>
@@ -177,8 +259,32 @@
   </div><!-- tutup sm-view-edit -->
 </div>
 
+
+<!-- PAGE: SASARAN MURID -->
+<div class="page" id="page-sasaran-murid">
+  <div class="sec-hd">
+    <div><div class="sec-title">🎯 Sasaran Murid SPM 2026</div><div class="sec-sub">Borang Sasaran Murid berdasarkan ETR Sekolah</div></div>
+  </div>
+  <div id="sasaran-murid-wrap"></div>
+</div>
+
 </main>
 <div class="toast" id="toast"></div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL JANA TAPAK -->
 <div class="modal-overlay" id="modal-jana">
@@ -186,6 +292,12 @@
     <div class="modal-head"><div class="modal-title">📋 Jana Tapak Baharu</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
     <div class="modal-body">
       <div class="alert alert-err" id="jana-err" style="display:none"></div>
+      <div id="jana-progress" style="display:none;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:6px" id="jana-progress-label">Menyediakan tapak...</div>
+        <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
+          <div id="jana-progress-bar" style="height:100%;background:var(--indigo);border-radius:99px;width:0%;transition:width 0.4s ease"></div>
+        </div>
+      </div>
       <div class="form-grid form-grid-2">
         <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="j-ting" onchange="muatKelasDropdown(this.value)"><option value="">-- Pilih --</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select></div>
         <div class="form-group"><label class="form-label">Kelas</label>
@@ -201,7 +313,7 @@
         </div>
         <div class="form-group form-full"><label class="form-label">Tahun</label><select class="form-select" id="j-tahun"><option value="2026">2026</option><option value="2025">2025</option></select></div>
       </div>
-      <div class="alert alert-info" style="font-size:12.5px;margin-bottom:0">ℹ️ Rekod tapak akan disimpan. Jana fail Google Sheets memerlukan sambungan GAS (dalam pembinaan).</div>
+      <div class="alert alert-info" style="font-size:12.5px;margin-bottom:0">ℹ️ Pastikan maklumat kelas dan pilihan pentaksiran adalah betul sebelum tapak dijana.</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" id="btn-jana" onclick="doJana()">Jana →</button></div>
   </div>
@@ -283,25 +395,65 @@
 <!-- MODAL SYNC -->
 <div class="modal-overlay" id="modal-sync">
   <div class="modal-box">
-    <div class="modal-head"><div class="modal-title">🔄 Sync Data ke JPN</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-head"><div class="modal-title">🔄 Kemaskini Data ke JPN</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
     <div class="modal-body" id="sync-body">
-      <p style="font-size:13.5px;color:var(--sub);margin-bottom:14px">Hantar data markah murid ke pangkalan data JPN Kedah.</p>
-      <div class="alert alert-warn">⚠️ Pastikan semua markah dalam tapak sudah lengkap sebelum sync.</div>
+      <p style="font-size:13.5px;color:var(--sub);margin-bottom:14px">Kemaskini data markah murid ke pangkalan data JPN Kedah.</p>
+      <div class="alert alert-warn">⚠️ Pastikan semua markah dalam tapak sudah lengkap sebelum dikemaskini.</div>
       <div style="background:var(--bg);border-radius:10px;padding:14px;font-size:13px"><strong id="sync-kelas">—</strong><br><span style="color:var(--sub)" id="sync-jenis">—</span></div>
     </div>
     <div class="modal-foot" id="sync-foot">
       <button class="btn-ghost" onclick="tutupModal()">Batal</button>
-      <button class="btn-primary" onclick="doSync()">🔄 Sync Sekarang</button>
+      <button class="btn-primary" onclick="doKemaskini()">🔄 Kemaskini Sekarang</button>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
 var _syncId=null;
 var _syncMeta=null;
+
+function bukaModalKemaskini(id, ssId, kelas, jenis, tingkatan, tahun) {
+  _syncId = id;
+  _syncMeta = { ssId, kelas, jenis, tingkatan, tahun };
+  console.log('bukaModalKemaskini ssId:', ssId);
+  document.getElementById('sync-kelas').textContent = kelas;
+  document.getElementById('sync-jenis').textContent = kodJenis(jenis) + ' · ' + tahun;
+  bukaModal('modal-sync');
+}
+
+async function doKemaskini() {
+  if (!_syncMeta) return;
+    const foot = document.getElementById('sync-foot');
+  foot.innerHTML = '<div class="spinner spinner-dark"></div><span style="font-size:13px;color:var(--sub);margin-left:10px">Sedang dikemaskini...</span>';
+  try {
+    const url = GAS_URL + '?action=sync'
+      + '&ssId=' + encodeURIComponent(_syncMeta.ssId)
+      + '&kodSekolah=' + encodeURIComponent(STATE.kodSekolah)
+      + '&namaSekolah=' + encodeURIComponent(STATE.namaSekolah||'')
+      + '&ppd=' + encodeURIComponent(STATE.ppd||'')
+      + '&tingkatan=' + encodeURIComponent(_syncMeta.tingkatan)
+      + '&kelas=' + encodeURIComponent(_syncMeta.kelas)
+      + '&jenisPentaksiran=' + encodeURIComponent(_syncMeta.jenis)
+      + '&tahun=' + encodeURIComponent(_syncMeta.tahun);
+    const res = await fetch(url);
+    const json = await res.json();
+    tutupModal();
+    if (json.ok) {
+      tunjukToast('✅ ' + _syncMeta.kelas + ' berjaya dikemaskini. ' + json.jumlah + ' murid.', 'success');
+      await muatTapak();
+    } else {
+      tunjukToast('❌ ' + (json.mesej||'Gagal kemaskini.'), 'error');
+    }
+  } catch(e) {
+    tutupModal();
+    tunjukToast('❌ Ralat: ' + e.message, 'error');
+  }
+}
 var GAS_URL='https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
 
 window.addEventListener('load',async()=>{
@@ -326,7 +478,7 @@ window.addEventListener('load',async()=>{
 async function muatStat(){
   const[{count:cT},{count:cM},{count:cR}]=await Promise.all([
     db.from('template_log').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah).neq('status','PADAM'),
-    db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah),
+    db.from('senarai_murid').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah),
     db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',STATE.kodSekolah).or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
   ]);
   document.getElementById('s-tapak').textContent=cT||0;
@@ -336,6 +488,25 @@ async function muatStat(){
 
 async function muatTapak(){
   const{data}=await db.from('template_log').select('*').eq('kod_sekolah',STATE.kodSekolah).neq('status','PADAM').order('tarikh',{ascending:false});
+  // Semak tapak perlu dikemaskini
+  const perluKemaskini = (data||[]).filter(t => t.perlu_sync && !t.is_simulasi);
+  const panel = document.getElementById('panel-kemaskini');
+  if (perluKemaskini.length > 0) {
+    document.getElementById('kemaskini-count').textContent = perluKemaskini.length;
+    document.getElementById('kemaskini-list').innerHTML = perluKemaskini.map(t => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--white);border-radius:8px;padding:8px 12px;border:1px solid var(--amber)">
+        <div>
+          <span style="font-weight:700;font-size:13px">${t.kelas}</span>
+          <span style="font-size:12px;color:var(--sub);margin-left:8px">${kodJenis(t.jenis_pentaksiran)} · ${t.tahun}</span>
+        </div>
+        <button class="btn-primary" style="font-size:12px;padding:5px 14px" onclick="bukaModalKemaskini('${t.id}','${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">
+          🔄 Kemaskini
+        </button>
+      </div>`).join('');
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
   const list=data||[];
   document.getElementById('tapak-count').textContent=list.length+' tapak';
 
@@ -363,7 +534,7 @@ async function muatTapak(){
         <td><span class="sp sp-ok">✓ Aktif</span></td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           ${t.url_edit&&t.url_edit!=='#'?`<a href="${t.url_edit}" target="_blank" class="btn-ghost" style="font-size:11.5px;padding:5px 10px;text-decoration:none">📝 Buka</a>`:''}
-          <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px;background:var(--indigo-l);color:var(--indigo);border-color:var(--indigo-m)" onclick="bukaSyncModal('${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">🔄 Sync</button>
+          <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px;background:var(--indigo-l);color:var(--indigo);border-color:var(--indigo-m)" onclick="bukaModalKemaskini('${t.id}','${t.id_spreadsheet}','${t.kelas}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">🔄 Kemaskini</button>
           <button class="btn-ghost" style="font-size:11.5px;padding:5px 10px" onclick="bukaEditTapak(${t.id},'${(t.kelas||'').replace(/'/g,"\\'")}','${t.jenis_pentaksiran}','${t.tingkatan}','${t.tahun}')">✏️ Edit</button>
           <button class="btn-danger" style="font-size:11.5px;padding:5px 10px" onclick="padamTapak(${t.id},'${(t.kelas||'').replace(/'/g,"\\'")}')">🗑</button>
         </td>
@@ -418,6 +589,12 @@ async function simpanProfil(){
   document.getElementById('p-kod-sekolah').textContent=kodSkl;
   tutupModal();tunjukToast('✅ Profil dikemaskini.','success');
 }
+async function bukaModalJana(){
+  bukaModal('modal-jana');
+  const ting = document.getElementById('j-ting').value;
+  if(ting) await muatKelasDropdown(ting);
+}
+
 async function muatKelasDropdown(ting){
   const sel=document.getElementById('j-kelas');
   sel.innerHTML='<option value="">— Pilih Kelas —</option>';
@@ -446,6 +623,15 @@ async function doJana(){
   document.getElementById('jana-err').style.display='none';
   document.getElementById('btn-jana').disabled=true;
   document.getElementById('btn-jana').textContent='⏳ Jana tapak...';
+  document.getElementById('jana-progress').style.display='block';
+  document.getElementById('jana-progress-bar').style.width='0%';
+  document.getElementById('jana-progress-label').textContent='Menyediakan tapak...';
+  let pct=0;
+  const progInterval=setInterval(()=>{
+    if(pct<85){ pct+=Math.random()*8; document.getElementById('jana-progress-bar').style.width=Math.min(pct,85)+'%'; }
+    const steps=['Menyediakan tapak...','Menyalin template...','Mengisi senarai murid...','Menetapkan soalan SP...','Hampir selesai...'];
+    document.getElementById('jana-progress-label').textContent=steps[Math.min(Math.floor(pct/20),4)];
+  },600);
   try {
     const params=new URLSearchParams({
       action:'jana',
@@ -461,10 +647,15 @@ async function doJana(){
     const res=await fetch(GAS_URL+'?'+params.toString());
     const hasil=await res.json();
     if(!hasil.ok){
+      clearInterval(progInterval);
+      document.getElementById('jana-progress').style.display='none';
       document.getElementById('jana-err').style.display='flex';
       document.getElementById('jana-err').textContent='❌ '+hasil.mesej;
       return;
     }
+    clearInterval(progInterval);
+    document.getElementById('jana-progress-bar').style.width='100%';
+    document.getElementById('jana-progress-label').textContent='Tapak berjaya dijana!';
     const{error}=await db.from('template_log').insert({
       id_pengguna:STATE.id, kod_sekolah:STATE.kodSekolah,
       kelas:kelas, tingkatan:ting, jenis_pentaksiran:jenis, tahun:tahun,
@@ -482,17 +673,12 @@ async function doJana(){
   } finally {
     document.getElementById('btn-jana').disabled=false;
     document.getElementById('btn-jana').textContent='Jana →';
+    document.getElementById('jana-progress').style.display='none';
   }
 }
 
-function bukaSyncModal(id,kelas,jenis,ting,tahun){
-  _syncId=id;
-  _syncMeta={kelas:kelas,jenis:jenis,ting:ting||'',tahun:tahun||'2026'};
-  document.getElementById('sync-kelas').textContent='Kelas '+kelas;
-  document.getElementById('sync-jenis').textContent=jenis;
-  document.getElementById('sync-body').style.display='block';
-  document.getElementById('sync-foot').innerHTML='<button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" onclick="doSync()">🔄 Sync Sekarang</button>';
-  bukaModal('modal-sync');
+function bukaSyncModal(ssId,kelas,jenis,ting,tahun){
+  bukaModalKemaskini('',ssId,kelas,jenis,ting,tahun);
 }
 function bukaEditTapak(id,kelas,jenis,ting,tahun){
   document.getElementById('edit-tapak-id').value=id;
@@ -514,10 +700,17 @@ async function simpanEditTapak(){
 }
 
 async function padamTapak(id,kelas){
-  if(!confirm('Padam tapak '+kelas+'? Data dalam Supabase tidak akan terpadam.')) return;
-  const{error}=await db.from('template_log').update({status:'PADAM'}).eq('id',id);
-  if(error){tunjukToast('❌ '+error.message,'error');return;}
-  tunjukToast('✅ Tapak dipadam.','success');muatTapak();
+  bukaKonfirm(
+    '🗑 Padam Tapak',
+    'Adakah anda pasti mahu memadam tapak kelas '+kelas+'?',
+    'Rekod markah murid dalam pangkalan data JPN tidak akan terpadam.',
+    'Ya, Padam','danger',
+    async()=>{
+      const{error}=await db.from('template_log').update({status:'PADAM'}).eq('id',id);
+      if(error){tunjukToast('❌ '+error.message,'error');return;}
+      tunjukToast('✅ Tapak dipadam.','success');muatTapak();
+    }
+  );
 }
 async function doSync(){
   if(!_syncId||_syncId.startsWith('PENDING_')){
@@ -563,10 +756,17 @@ async function doSync(){
 }
 
 async function muatAnalisis(){
-  const params={
-    tingkatan:        document.getElementById('af-ting').value,
-    jenisPentaksiran: document.getElementById('af-jenis').value,
-    tahun:            document.getElementById('af-tahun').value
+  const tingkatan=document.getElementById('af-ting').value;
+  const jenisPentaksiran=document.getElementById('af-jenis').value;
+  const tahun=document.getElementById('af-tahun').value;
+  const params={tingkatan,jenisPentaksiran,tahun,sekolah:STATE.kodSekolah};
+  window._cetakParams={
+    tingkatan,
+    jenisPentaksiran:jenisPentaksiran||'Semua',
+    tahun,
+    ppd:'',
+    sekolah:'',
+    kelas:''
   };
   await muatAnalisisSupa(params,'SEKOLAH','analisis-result');
 }
@@ -627,10 +827,55 @@ async function muatRisiko(){
 var _smMurid = [];
 var _smTing  = '';
 var _smKelas = '';
+var _smTahun = '2026';
+
+var _konfirmCb = null;
+function bukaKonfirm(tajuk, mesej, notis, labelBtn, klasBtn, cb){
+  _konfirmCb = cb;
+  document.getElementById('konfirm-tajuk').textContent = tajuk;
+  document.getElementById('konfirm-mesej').textContent = mesej;
+  const notisEl = document.getElementById('konfirm-notis');
+  if(notis){
+    notisEl.style.display='block';
+    notisEl.innerHTML='<div class="alert alert-warn">⚠️ '+notis+'</div>';
+  } else {
+    notisEl.style.display='none';
+  }
+  const btn = document.getElementById('konfirm-btn');
+  btn.textContent = labelBtn||'Sahkan';
+  btn.className = 'btn-'+(klasBtn||'danger');
+  bukaModal('modal-konfirm');
+}
+function _konfirmExec(){
+  tutupModal();
+  if(_konfirmCb) _konfirmCb();
+  _konfirmCb = null;
+}
+
+async function padamKelas(ting,kelas){
+  bukaKonfirm(
+    '🗑 Padam Kelas',
+    'Adakah anda pasti mahu memadam kelas '+kelas+'?',
+    'Senarai murid kelas ini akan dipadam. Tapak analisis yang telah dijana TIDAK akan terpadam.',
+    'Ya, Padam','danger',
+    async()=>{
+      const{error}=await db.from('senarai_murid').delete().eq('kod_sekolah',STATE.kodSekolah).eq('tingkatan',ting).eq('kelas',kelas);
+      if(error){tunjukToast('❌ '+error.message,'error');return;}
+      tunjukToast('✅ Kelas '+kelas+' dipadam.','success');
+      await Promise.all([muatListKelas(),muatStat()]);
+    }
+  );
+}
+
+function resetViewMurid(){
+  document.getElementById('sm-view-list').style.display='block';
+  document.getElementById('sm-view-edit').style.display='none';
+  muatListKelas();
+}
 
 async function muatListKelas(){
   const{data}=await db.from('senarai_murid')
-    .select('tingkatan,kelas')
+    .select('tingkatan,kelas,tahun')
     .eq('kod_sekolah',STATE.kodSekolah)
     .order('tingkatan').order('kelas');
   const el=document.getElementById('sm-list-kelas');
@@ -640,17 +885,18 @@ async function muatListKelas(){
     return;
   }
   const seen=new Set();
-  const kelas=data.filter(d=>{const k=d.tingkatan+'_'+d.kelas;if(seen.has(k))return false;seen.add(k);return true;});
+  const kelas=data.filter(d=>{const k=d.tingkatan+'_'+d.kelas+'_'+d.tahun;if(seen.has(k))return false;seen.add(k);return true;});
   el.innerHTML=`
     <div class="card">
       <div class="card-head"><div class="card-title">📚 Senarai Kelas <span class="chip">${kelas.length} kelas</span></div></div>
       <div class="card-body" style="padding:0">
         <table class="data-table">
-          <thead><tr><th>Tingkatan</th><th>Kelas</th><th>Tindakan</th></tr></thead>
-          <tbody>${kelas.map(k=>`<tr style="cursor:pointer" onclick="bukaMuridKelas('${k.tingkatan}','${k.kelas}')">
+          <thead><tr><th>Tingkatan</th><th>Kelas</th><th>Tahun</th><th>Tindakan</th></tr></thead>
+          <tbody>${kelas.map(k=>`<tr style="cursor:pointer" onclick="bukaMuridKelas('${k.tingkatan}','${k.kelas}','${k.tahun||'2026'}')">
             <td><span class="chip chip-em">T${k.tingkatan}</span></td>
             <td style="font-weight:700">${k.kelas}</td>
-            <td><button class="btn-ghost" style="font-size:12px;padding:4px 12px" onclick="event.stopPropagation();bukaMuridKelas('${k.tingkatan}','${k.kelas}')">✏️ Edit Murid</button></td>
+            <td style="font-family:var(--ffm);font-weight:700">${k.tahun||'—'}</td>
+            <td style="display:flex;gap:6px"><button class="btn-ghost" style="font-size:12px;padding:4px 12px" onclick="event.stopPropagation();bukaMuridKelas('${k.tingkatan}','${k.kelas}','${k.tahun||'2026'}')">✏️ Edit Murid</button><button class="btn-danger" style="font-size:12px;padding:4px 10px" onclick="event.stopPropagation();padamKelas('${k.tingkatan}','${k.kelas}')">🗑 Padam</button></td>
           </tr>`).join('')}
           </tbody>
         </table>
@@ -668,12 +914,13 @@ function paparFormCari(){
   _smMurid=[];_smTing='';_smKelas='';
 }
 
-function bukaMuridKelas(ting,kelas){
+function bukaMuridKelas(ting,kelas,tahun){
   document.getElementById('sm-view-list').style.display='none';
   document.getElementById('sm-view-edit').style.display='block';
   document.getElementById('btn-tambah-kelas').style.display='none';
   document.getElementById('sm-ting').value=ting;
   document.getElementById('sm-kelas').value=kelas;
+  if(tahun) document.getElementById('sm-tahun').value=tahun;
   cariMurid();
 }
 
@@ -695,6 +942,7 @@ function detectJantina(nama) {
 async function cariMurid() {
   _smTing  = document.getElementById('sm-ting').value.trim();
   _smKelas = document.getElementById('sm-kelas').value.trim().toUpperCase();
+  _smTahun = document.getElementById('sm-tahun').value;
   if (!_smTing || !_smKelas) { tunjukToast('⚠️ Pilih tingkatan dan nama kelas.','warn'); return; }
 
   document.getElementById('sm-panel').style.display = 'none';
@@ -798,7 +1046,7 @@ function tambahBarisBaru() {
     id: null, nama_murid: '', jantina: '',
     kod_sekolah: STATE.kodSekolah,
     nama_sekolah: STATE.namaSekolah,
-    tingkatan: _smTing, kelas: _smKelas, tahun: '2026',
+    tingkatan: _smTing, kelas: _smKelas, tahun: _smTahun,
     isNew: true, isEdit: false, isDelete: false
   });
   renderJadualMurid();
@@ -825,7 +1073,7 @@ function prosesNamaPaste() {
     _smMurid.push({
       id: null, nama_murid: nama, jantina: detectJantina(b),
       kod_sekolah: STATE.kodSekolah, nama_sekolah: STATE.namaSekolah,
-      tingkatan: _smTing, kelas: _smKelas, tahun: '2026',
+      tingkatan: _smTing, kelas: _smKelas, tahun: _smTahun,
       isNew: true, isEdit: false, isDelete: false
     });
     namaAda.add(nama);
@@ -864,7 +1112,7 @@ async function simpanMurid() {
       const rows = baharu.map(m => ({
         kod_sekolah: STATE.kodSekolah, nama_sekolah: STATE.namaSekolah,
         tingkatan: _smTing, kelas: _smKelas,
-        nama_murid: m.nama_murid.trim(), jantina: m.jantina||null, tahun: '2026'
+        nama_murid: m.nama_murid.trim(), jantina: m.jantina||null, tahun: _smTahun
       }));
       const { error } = await db.from('senarai_murid').insert(rows);
       if (error) throw new Error(error.message);
@@ -903,6 +1151,480 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
+// ── SUB TAB
+function setSubTab(nama) {
+  document.getElementById('sub-item').style.display = nama === 'item' ? '' : 'none';
+  document.getElementById('sub-prestasi-guru').style.display = nama === 'prestasi-guru' ? '' : 'none';
+  document.getElementById('stab-item').classList.toggle('active', nama === 'item');
+  document.getElementById('stab-prestasi-guru').classList.toggle('active', nama === 'prestasi-guru');
+  if (nama === 'prestasi-guru') { muatPrestasiGuru(); }
+}
+
+// ── DROPDOWN CHECKBOX (Prestasi)
+function toggleDropdownCheck(id) {
+  const el = document.getElementById(id);
+  const buka = el.style.display === 'none' || el.style.display === '';
+  document.querySelectorAll('.dropdown-check-list').forEach(d => { d.style.display = 'none'; });
+  if (!buka) return;
+  const btn = document.querySelector(`[onclick*="${id}"]`);
+  const rect = btn.getBoundingClientRect();
+  if (el.parentNode !== document.body) document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.left = rect.left + 'px';
+  el.style.width = Math.max(rect.width, 240) + 'px';
+  el.style.zIndex = '999999';
+  const ddH = 240;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  el.style.top = (spaceBelow >= ddH || rect.top < ddH)
+    ? (rect.bottom + 4) + 'px'
+    : (rect.top - ddH - 4) + 'px';
+  el.style.display = 'block';
+  el.style.transform = 'translateZ(0)';
+  el.style.willChange = 'transform';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-check') && !e.target.closest('.dropdown-check-list'))
+    document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+});
+window.addEventListener('scroll', e => {
+  if (e.target && e.target.closest && e.target.closest('.dropdown-check-list')) return;
+  document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+}, true);
+// ── PRESTASI GURU: state
+var _rawSpmGuru = [], _filteredSpmGuru = [];
+var _chartGuru = null;
+
+async function muatPrestasiGuru(forceRefresh = false) {
+  if (forceRefresh) localStorage.removeItem('simp_spm_cache');
+  const namaEl = document.getElementById('nama-sekolah-prestasi');
+  if (namaEl) namaEl.textContent = STATE.namaSekolah || STATE.kodSekolah;
+  const elResult = document.getElementById('guru-spm-result');
+  if (elResult) elResult.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+  const semua = await muatDataSPM();
+  _rawSpmGuru = semua.filter(r =>
+    r['mata pelajaran'] === 'PERNIAGAAN' &&
+    r['kod sekolah'] === STATE.kodSekolah
+  );
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const jpSet = [...new Set(_rawSpmGuru.map(r => r['jenis pentaksiran']).filter(Boolean))].sort((a,b) => {
+    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
+    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
+    if (tA !== tB) return tA - tB;
+    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+  const elDDC = document.getElementById('guru-ddc');
+  if (elDDC) elDDC.innerHTML = jpSet.map(j =>
+    `<label class="ddc-item"><input type="checkbox" value="${j}" onchange="kemaskiniLabelDdcGuru()"> ${j}</label>`
+  ).join('');
+  _filteredSpmGuru = [..._rawSpmGuru];
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
+
+function getCheckedPentaksiran_guru() {
+  return [...document.querySelectorAll('#guru-ddc input:checked')].map(c => c.value);
+}
+
+function kemaskiniLabelDdcGuru() {
+  const checked = getCheckedPentaksiran_guru();
+  const el = document.getElementById('guru-ddc-label');
+  if (!el) return;
+  el.textContent = checked.length === 0 ? 'Semua Pentaksiran'
+    : checked.length === 1 ? checked[0]
+    : `${checked.length} dipilih`;
+}
+
+function tapis_spm_guru() {
+  const jpList = getCheckedPentaksiran_guru();
+  _filteredSpmGuru = _rawSpmGuru.filter(r => {
+    if (jpList.length && !jpList.includes(r['jenis pentaksiran'])) return false;
+    return true;
+  });
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
+
+function resetTapisanGuru() {
+  document.querySelectorAll('#guru-ddc input').forEach(c => c.checked = false);
+  kemaskiniLabelDdcGuru();
+  _filteredSpmGuru = [..._rawSpmGuru];
+  window._filteredSpmGuru = _filteredSpmGuru;
+  _renderPrestasiGuru();
+}
+
+function _renderPrestasiGuru() {
+  if (!_filteredSpmGuru.length) {
+    document.getElementById('guru-spm-kad').style.display = 'none';
+    document.getElementById('guru-chart-wrap').style.display = 'none';
+    document.getElementById('guru-spm-result').innerHTML =
+      '<div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
+    return;
+  }
+  _renderKadGuru(_filteredSpmGuru);
+  renderChartGuru();
+  renderJadualSPM(_filteredSpmGuru, 'guru-spm-result-table');
+  document.getElementById('guru-spm-result').innerHTML = '<div id="guru-spm-result-table"></div>';
+  renderJadualSPM(_filteredSpmGuru, 'guru-spm-result-table');
+}
+
+function _renderKadGuru(data) {
+  const el = document.getElementById('guru-spm-kad');
+  if (!el) return;
+  const jmlD = data.reduce((s,r) => s + r['bil duduki'], 0);
+  const pA  = jmlD ? (data.reduce((s,r) => s + r['%a']       * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const pK  = jmlD ? (data.reduce((s,r) => s + r['% kredit'] * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const pL  = jmlD ? (data.reduce((s,r) => s + r['%lulus']   * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  const gp  = jmlD ? (data.reduce((s,r) => s + r['gpmp']     * r['bil duduki'], 0) / jmlD).toFixed(2) : '—';
+  document.getElementById('gk-duduki').textContent = jmlD;
+  document.getElementById('gk-a').textContent      = pA  + (pA  !== '—' ? '%' : '');
+  document.getElementById('gk-kredit').textContent = pK  + (pK  !== '—' ? '%' : '');
+  document.getElementById('gk-lulus').textContent  = pL  + (pL  !== '—' ? '%' : '');
+  document.getElementById('gk-gpmp').textContent   = gp;
+  el.style.display = '';
+}
+
+function renderChartGuru() {
+  const wrap   = document.getElementById('guru-chart-wrap');
+  const metrik = (document.getElementById('guru-c-metrik') || {}).value || 'gpmp';
+  if (!_filteredSpmGuru.length) { wrap.style.display = 'none'; return; }
+
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const jpList = [...new Set(_filteredSpmGuru.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
+    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
+    if (tA !== tB) return tA - tB;
+    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+
+  const WARNA = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+  const nilaiList = jpList.map(jp => {
+    const r = _filteredSpmGuru.find(x => x['jenis pentaksiran'] === jp);
+    return r ? +r[metrik] : 0;
+  });
+
+  wrap.style.display = '';
+  if (_chartGuru) _chartGuru.destroy();
+  _chartGuru = new Chart(document.getElementById('chart-guru'), {
+    type: 'bar',
+    data: {
+      labels: jpList,
+      datasets: [{ label: STATE.namaSekolah || STATE.kodSekolah, data: nilaiList,
+        backgroundColor: WARNA.slice(0, jpList.length).map(c => c + 'cc'),
+        borderColor: WARNA.slice(0, jpList.length), borderWidth: 1 }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          font: { size: 11, weight: '700' },
+          color: '#374151',
+          formatter: (v) => v !== null ? v : ''
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, min: 0,
+          max: metrik === 'gpmp' ? 10 : undefined,
+          grace: '10%',
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'Jenis Pentaksiran' } }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+// ── NAV DROPDOWN HOVER
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(dd) {
+    var closeTimer;
+    dd.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      var menu = dd.querySelector('.nav-drop-menu');
+      var rect = dd.getBoundingClientRect();
+      menu.style.cssText = 'display:block !important;position:fixed !important;top:'+(rect.bottom)+'px !important;left:'+rect.left+'px !important;z-index:99999 !important;background:white !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 8px 24px rgba(0,0,0,.15) !important;min-width:190px !important;padding:6px 0 !important';
+    });
+    dd.addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 150);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 100);
+    });
+  });
+});
+
+// ================================================================
+// MODUL SASARAN MURID — GURU
+// ================================================================
+var _etrSekolah = null;
+var _muridList = [];
+var _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+var _sasaranStatus = 'DRAF';
+var _gpnNegeri = 4.71;
+
+async function muatSasaranMurid() {
+  const wrap = document.getElementById('sasaran-murid-wrap');
+  wrap.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div> Memuatkan...</div>';
+
+  // Muat GPN negeri
+  const { data: tetap } = await db.from('tetapan_umum').select('kunci,nilai').eq('kunci','gpn_negeri_2026');
+  if (tetap && tetap[0]) _gpnNegeri = parseFloat(tetap[0].nilai) || 4.71;
+
+  // Muat ETR sekolah
+  const { data: etr } = await db.from('etr_sasaran')
+    .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah).single();
+
+  if (!etr || etr.status_hantar !== 'DIHANTAR') {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state" style="padding:40px">
+      <div class="ico">📋</div>
+      <p>Sasaran ETR belum dihantar oleh JPN. Sila hubungi JPN Kedah untuk maklumat lanjut.</p>
+    </div></div></div>`;
+    return;
+  }
+  _etrSekolah = etr;
+
+  // Muat murid dari skor_master PPSA T5 2026
+  const { data: murid } = await db.from('skor_master')
+    .select('nama_murid, kelas, gred, markah_wajaran')
+    .eq('kod_sekolah', STATE.kodSekolah)
+    .eq('tingkatan','5')
+    .eq('jenis_pentaksiran','PENTAKSIRAN PERTENGAHAN SESI AKADEMIK')
+    .eq('tahun','2026')
+    .order('markah_wajaran', { ascending: false });
+
+  if (!murid || !murid.length) {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state" style="padding:40px">
+      <div class="ico">⚠️</div>
+      <p>Tiada data PPSA T5 2026 dijumpai. Sila sync tapak analisis dahulu sebelum isi borang sasaran.</p>
+    </div></div></div>`;
+    return;
+  }
+  _muridList = murid;
+
+  // Muat sasaran sedia ada
+  const { data: sedia } = await db.from('sasaran_murid')
+    .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+  _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+  if (sedia && sedia.length) {
+    sedia.forEach(s => {
+      if (_sasaranPilihan[s.kategori]) _sasaranPilihan[s.kategori].push({ nama: s.nama_murid, gred: s.gred_semasa });
+    });
+    _sasaranStatus = sedia[0].status || 'DRAF';
+  }
+
+  renderBorangSasaran();
+}
+
+function kuotaMin(kat) {
+  const e = _etrSekolah;
+  if (!e) return 0;
+  if (kat === 'CEMERLANG') return (e.bil_aplus_semasa||e.bil_aplus||0)+(e.bil_a_semasa||e.bil_a||0)+(e.bil_aminus_semasa||e.bil_aminus||0);
+  if (kat === 'KEPUJIAN')  return (e.bil_bplus_semasa||e.bil_bplus||0)+(e.bil_b_semasa||e.bil_b||0)+(e.bil_cplus_semasa||e.bil_cplus||0)+(e.bil_c_semasa||e.bil_c||0);
+  if (kat === 'LULUS')     return (e.bil_d_semasa||e.bil_d||0)+(e.bil_e_semasa||e.bil_e||0);
+  if (kat === 'GAGAL')     return (e.bil_g_semasa||e.bil_g||0);
+  return 0;
+}
+
+function nilaiGred(g) {
+  const map = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'C+':5,'C':6,'D':7,'E':8,'G':9};
+  return map[g] !== undefined ? map[g] : null;
+}
+
+function kiraGPSasaran() {
+  const semua = [..._sasaranPilihan.CEMERLANG, ..._sasaranPilihan.KEPUJIAN, ..._sasaranPilihan.LULUS, ..._sasaranPilihan.GAGAL];
+  const valid = semua.filter(m => nilaiGred(m.gred) !== null);
+  if (!valid.length) return null;
+  const jumlah = valid.reduce((s,m) => s + nilaiGred(m.gred), 0);
+  return Math.round((jumlah / valid.length) * 100) / 100;
+}
+
+function renderBorangSasaran() {
+  const e = _etrSekolah;
+  const gp = kiraGPSasaran();
+  const gpStr = gp !== null ? gp.toFixed(2) : '—';
+  const etrGP = (e.etr_gp_semasa || e.etr_gp || 0).toFixed(2);
+  const kat = e.kategori || 3;
+  const katLabel = ['','Cemerlang','Harapan Tinggi','Peningkatan','Pengukuhan'][kat];
+  const katWarna = ['','var(--ok)','var(--info)','var(--amber)','var(--rose)'][kat];
+  const sudahHantar = _sasaranStatus === 'DIHANTAR_SEKOLAH';
+
+  const wrap = document.getElementById('sasaran-murid-wrap');
+  wrap.innerHTML = `
+  <!-- Info Sekolah -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div style="font-size:16px;font-weight:800;color:var(--ink)">${STATE.namaSekolah||'—'}</div>
+      <div style="font-size:13px;color:var(--sub);margin-top:4px">
+        Kategori <strong style="color:${katWarna}">${kat}: ${katLabel}</strong> &nbsp;|&nbsp;
+        ETR Sasaran GP: <strong style="color:var(--indigo)">${etrGP}</strong> &nbsp;|&nbsp;
+        GPN Negeri: <strong>${_gpnNegeri}</strong>
+      </div>
+      <div style="font-size:13px;color:var(--sub);margin-top:2px">Jumlah Calon T5: <strong>${e.jum_calon_semasa||e.jum_calon||0} murid</strong></div>
+    </div>
+  </div>
+
+  <!-- Stat Kuota -->
+  <div class="stats-row stats-4" style="margin-bottom:16px">
+    ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => {
+      const bil = _sasaranPilihan[k].length;
+      const min = kuotaMin(k);
+      const ok = bil >= min;
+      const warna = k==='CEMERLANG'?'var(--ok)':k==='KEPUJIAN'?'var(--info)':k==='LULUS'?'var(--amber)':'var(--rose)';
+      return `<div class="stat-card" style="border-top:3px solid ${warna}">
+        <div class="stat-val" style="color:${ok?warna:'var(--rose)'}">${bil}/${min}</div>
+        <div class="stat-lbl">${k}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- GP Semasa vs ETR -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div style="background:#1e293b;color:#fff;padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:0.8">ETR SASARAN GP</div>
+      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)">${etrGP}</div>
+      <div style="font-size:11px;opacity:0.8">Kat ${kat}: ${katLabel}</div>
+    </div>
+    <div id="gp-semasa-kad" style="background:linear-gradient(135deg,#1a3c5e,#0f5132);color:#fff;padding:14px;border-radius:10px">
+      <div style="font-size:11px;opacity:0.8">GP SASARAN SEMASA</div>
+      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)" id="gp-semasa-val">${gpStr}</div>
+      <div style="font-size:11px;opacity:0.9" id="gp-semasa-info">${_sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length} murid dipilih</div>
+    </div>
+  </div>
+
+  <!-- Bahagian per Kategori -->
+  ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => renderSeksyenKategori(k, sudahHantar)).join('')}
+
+  <!-- Footer Butang -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap">
+    ${sudahHantar ? '<span style="color:var(--ok);font-weight:700;align-self:center">✓ Borang telah dihantar</span>' : `
+    <button class="btn-ghost" onclick="simpanDrafSasaran()">💾 Simpan Draf</button>
+    <button class="btn-primary" onclick="hantarBorangSasaran()">📤 Hantar Borang</button>`}
+  </div>`;
+}
+
+function renderSeksyenKategori(kat, disabled) {
+  const min = kuotaMin(kat);
+  const senarai = _sasaranPilihan[kat];
+  const bil = senarai.length;
+  const ok = bil >= min;
+  const warna = kat==='CEMERLANG'?'var(--ok)':kat==='KEPUJIAN'?'var(--info)':kat==='LULUS'?'var(--amber)':'var(--rose)';
+  const label = kat==='CEMERLANG'?'Cemerlang (A+, A, A-)':kat==='KEPUJIAN'?'Kepujian (B+, B, C+, C)':kat==='LULUS'?'Lulus (D, E)':'Gagal (G)';
+
+  // Murid yang belum dipilih dalam mana-mana kategori
+  const dipilih = new Set([..._sasaranPilihan.CEMERLANG,..._sasaranPilihan.KEPUJIAN,..._sasaranPilihan.LULUS,..._sasaranPilihan.GAGAL].map(m=>m.nama));
+  const tersedia = _muridList.filter(m => !dipilih.has(m.nama_murid) || senarai.find(s=>s.nama===m.nama_murid));
+
+  return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${warna}">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:700;font-size:14px;color:${warna}">${label} <span style="font-size:12px;font-weight:600">Min: ${min}</span></div>
+        <div style="font-size:12px;color:${ok?'var(--ok)':'var(--rose)'};font-weight:700">${ok?'✓':'⚠️'} ${bil} / ${min} murid (Min ${min})</div>
+      </div>
+      ${senarai.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${senarai.map(m => `<span style="background:${warna}22;color:${warna};border:1px solid ${warna}44;padding:4px 10px;border-radius:20px;font-size:12.5px;font-weight:600">
+          ${m.nama} <span style="opacity:0.7">(${m.gred||'—'})</span>
+          ${!disabled?`<span onclick="buangMuridSasaran('${kat}','${m.nama}')" style="cursor:pointer;margin-left:4px;opacity:0.7">✕</span>`:''}
+        </span>`).join('')}
+      </div>` : `<div style="font-size:13px;color:var(--sub);margin-bottom:10px">Tiada murid disenaraikan.</div>`}
+      ${!disabled ? `<div style="display:flex;gap:8px;align-items:center">
+        <select class="form-select" id="dd-${kat}" style="flex:1;font-size:13px">
+          <option value="">-- Pilih Murid --</option>
+          ${tersedia.map(m => `<option value="${m.nama_murid}" data-gred="${m.gred||'—'}">${m.nama_murid} (${m.kelas||'—'}) — ${m.gred||'—'}</option>`).join('')}
+        </select>
+        <button class="btn-ghost" style="white-space:nowrap;font-size:13px" onclick="tambahMuridSasaran('${kat}')">+ Tambah</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function tambahMuridSasaran(kat) {
+  const sel = document.getElementById('dd-'+kat);
+  if (!sel || !sel.value) return;
+  const nama = sel.value;
+  const gred = sel.selectedOptions[0]?.dataset.gred || '—';
+  // Semak dah dipilih dalam kategori lain
+  for (const k of ['CEMERLANG','KEPUJIAN','LULUS','GAGAL']) {
+    if (_sasaranPilihan[k].find(m => m.nama === nama)) {
+      tunjukToast('⚠️ '+nama+' sudah dipilih dalam '+k,'warn'); return;
+    }
+  }
+  _sasaranPilihan[kat].push({ nama, gred });
+  kemaskiniGPSasaran();
+  renderBorangSasaran();
+}
+
+function buangMuridSasaran(kat, nama) {
+  _sasaranPilihan[kat] = _sasaranPilihan[kat].filter(m => m.nama !== nama);
+  kemaskiniGPSasaran();
+  renderBorangSasaran();
+}
+
+function kemaskiniGPSasaran() {
+  const gp = kiraGPSasaran();
+  const el = document.getElementById('gp-semasa-val');
+  const info = document.getElementById('gp-semasa-info');
+  if (el) el.textContent = gp !== null ? gp.toFixed(2) : '—';
+  const jum = _sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length;
+  if (info) info.textContent = jum+' murid dipilih';
+}
+
+async function simpanDrafSasaran() {
+  await _simpanSasaran('DRAF');
+}
+
+async function hantarBorangSasaran() {
+  const semua = ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'];
+  for (const k of semua) {
+    if (_sasaranPilihan[k].length < kuotaMin(k)) {
+      tunjukToast('⚠️ Kuota '+k+' belum dipenuhi (min '+kuotaMin(k)+')','warn',4000);
+      return;
+    }
+  }
+  await _simpanSasaran('DIHANTAR_SEKOLAH');
+  // Kemaskini status dalam etr_sasaran
+  await db.from('etr_sasaran').update({ status_sekolah:'DIHANTAR_SEKOLAH', tarikh_sekolah: new Date().toISOString() })
+    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+}
+
+async function _simpanSasaran(status) {
+  const rekod = [];
+  ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].forEach(kat => {
+    _sasaranPilihan[kat].forEach(m => {
+      rekod.push({
+        tahun: '2026', kod_sekolah: STATE.kodSekolah,
+        nama_sekolah: STATE.namaSekolah, nama_murid: m.nama,
+        kategori: kat, gred_semasa: m.gred, status,
+        tarikh_kemaskini: new Date().toISOString(),
+        id_pengguna: STATE.id
+      });
+    });
+  });
+
+  // Padam rekod lama dulu
+  await db.from('sasaran_murid').delete()
+    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
+
+  if (rekod.length) {
+    const { error } = await db.from('sasaran_murid').insert(rekod);
+    if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  }
+
+  _sasaranStatus = status;
+  tunjukToast(status==='DIHANTAR_SEKOLAH' ? '✅ Borang dihantar ke JPN!' : '✅ Draf disimpan.','success');
+  renderBorangSasaran();
+}
 </script>
 </body>
 </html>

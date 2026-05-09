@@ -54,6 +54,8 @@ body::before { content:''; position:fixed; inset:0; z-index:0; background-image:
 .screen { display:none; }
 .screen.show { display:block; }
 @media(max-width:480px){ .card-inner{ padding:24px; } }
+.form-select, .form-input { max-width:100%; box-sizing:border-box; }
+#field-sekolah select { width:100%; }
 </style>
 </head>
 <body>
@@ -72,7 +74,7 @@ body::before { content:''; position:fixed; inset:0; z-index:0; background-image:
           <div class="logo-sub">Sistem Intervensi Mata Pelajaran · Analisis Item</div>
         </div>
       </div>
-      <div class="heading"><h1>Selamat Datang 👋</h1><p>Sila masukkan ID Pengguna dan Kata Laluan anda</p></div>
+      <div class="heading"><h1>Selamat Datang Guru Hebat! 👋</h1><p>Sila masukkan ID Pengguna dan Kata Laluan anda</p></div>
       <div class="alert alert-err" id="err-msg" style="display:none">⚠️ <span id="err-txt"></span></div>
       <div class="field-group">
         <label class="form-label">ID Pengguna</label>
@@ -176,11 +178,17 @@ body::before { content:''; position:fixed; inset:0; z-index:0; background-image:
         </div>
         <div class="field-group">
           <label class="form-label">Nama Sekolah <span style="color:var(--rose)">*</span></label>
-          <select class="form-select" id="d-sekolah"><option value="">— Pilih PPD dahulu —</option></select>
+          <select class="form-select" id="d-sekolah" style="width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis"><option value="">— Pilih PPD dahulu —</option></select>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <div><div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px">Kod Sekolah (auto)</div><div style="font-size:13px;font-family:var(--ffm);color:var(--indigo);font-weight:700;padding:8px 12px;background:var(--bg);border-radius:8px;min-height:36px" id="d-kod-sekolah">—</div></div>
-          <div><div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px">Nama Sekolah (auto)</div><div style="font-size:12px;color:var(--sub);padding:8px 12px;background:var(--bg);border-radius:8px;min-height:36px;line-height:1.4" id="d-nama-sekolah">—</div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--bg);border-radius:8px">
+            <span style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap">Kod:</span>
+            <span style="font-size:13px;font-family:var(--ffm);color:var(--indigo);font-weight:700" id="d-kod-sekolah">—</span>
+          </div>
+          <div style="padding:8px 12px;background:var(--bg);border-radius:8px">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px">Nama Sekolah (auto)</div>
+            <div style="font-size:12px;color:var(--sub);line-height:1.4" id="d-nama-sekolah">—</div>
+          </div>
         </div>
       </div>
       <!-- Field PPD -->
@@ -420,7 +428,7 @@ async function doDaftar() {
   if (pw.length < 6) return errDaftar('Kata laluan minimum 6 aksara.');
   if (pw !== pw2) return errDaftar('Kata laluan tidak sepadan.');
   if (!/^[a-z0-9._-]+$/.test(id)) return errDaftar('ID hanya boleh mengandungi huruf kecil, nombor, titik dan garis bawah.');
-  var payload = { id, nama, kata_laluan:pw, peranan:_perananAktif, email, status:'aktif' };
+  var payload = { id, nama, kata_laluan:pw, peranan:_perananAktif, email, status:'AKTIF' };
   if (_perananAktif === 'SEKOLAH') {
     const kodSkl = document.getElementById('d-sekolah').value;
     const ppdSel = document.getElementById('d-ppd');

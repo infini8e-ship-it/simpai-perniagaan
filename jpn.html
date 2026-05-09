@@ -11,11 +11,23 @@
   <a class="nav-brand" href="jpn.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">📊 Dashboard</button>
-    <button class="nav-tab" onclick="setTab(this,'sekolah')">🏫 Urus Sekolah</button>
-    <button class="nav-tab" onclick="setTab(this,'pengguna')">👥 Urus Pengguna</button>
-    <button class="nav-tab" onclick="setTab(this,'analisis')">🔬 Analisis Negeri</button>
-    <button class="nav-tab" onclick="setTab(this,'tetapan')">⚙️ Tetapan SP</button>
-    <button class="nav-tab" onclick="setTab(this,'simulasi')">🧪 Simulasi</button>
+    <button class="nav-tab" onclick="setTab(this,'sekolah')">🏫 Sekolah</button>
+    <button class="nav-tab" onclick="setTab(this,'pengguna')">👥 Pengguna</button>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">🔬 Analisis ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'analisis')">🔬 Analisis Negeri</button>
+        <button onclick="setTab(this,'prestasi-spm-jpn')">🏆 Sejarah Prestasi</button>
+        <button onclick="setTab(this,'sasaran-etr');muatSasaranETR()">🎯 Sasaran ETR</button>
+      </div>
+    </div>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">⚙️ Tetapan ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'tetapan')">⚙️ Tetapan SP</button>
+        <button onclick="setTab(this,'simulasi')">🧪 Simulasi</button>
+      </div>
+    </div>
   </div>
   <div class="nav-right">
     <span class="nav-badge nb-jpn" id="nav-badge">JPN KEDAH</span>
@@ -23,6 +35,10 @@
     <button class="btn-logout" onclick="doLogout()">↩ Keluar</button>
   </div>
 </nav>
+<script>
+// Debug dropdown
+
+</script>
 <main>
 
 <div class="page show" id="page-dashboard">
@@ -91,6 +107,11 @@
   <div class="sec-hd">
     <div><div class="sec-title">Analisis Negeri 🔬</div><div class="sec-sub">Prestasi murid peringkat negeri</div></div>
   </div>
+  <div class="sub-tabs" style="margin-bottom:16px">
+    <button class="sub-tab active" id="jpn-stab-item" onclick="setJPNSubTab('item')">🔬 Analisis Item</button>
+    <button class="sub-tab" id="jpn-stab-prestasi" onclick="setJPNSubTab('prestasi')">🏆 Sejarah Prestasi</button>
+  </div>
+  <div id="jpn-sub-item">
   <div class="card" style="margin-bottom:16px">
     <div class="card-body">
       <div class="form-grid form-grid-3">
@@ -112,14 +133,26 @@
           <select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2025">2025</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label">PPD (optional)</label>
-          <select class="form-select" id="af-ppd"><option value="">Semua Daerah</option></select>
+          <label class="form-label">PPD (pilihan)</label>
+          <select class="form-select" id="af-ppd" onchange="muatSekolahAnalisis()"><option value="">Semua Daerah</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sekolah (pilihan)</label>
+          <select class="form-select" id="af-sekolah"><option value="">Semua Sekolah</option></select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="af-cari-sekolah" placeholder="Taip kod atau nama sekolah untuk tapis dropdown sekolah di atas..." oninput="cariSekolahAnalisis()">
         </div>
       </div>
       <div style="margin-top:14px"><button class="btn-primary" onclick="muatAnalisis()">🔍 Papar Analisis</button></div>
     </div>
   </div>
   <div id="analisis-result"><div class="empty-state card" style="padding:40px"><div class="ico">🔬</div><p>Pilih parameter di atas dan klik Papar Analisis.</p></div></div>
+  </div><!-- /jpn-sub-item -->
+
+  <div id="jpn-sub-prestasi" style="display:none">
+  </div>
 </div>
 
 <div class="page" id="page-tetapan">
@@ -322,7 +355,318 @@
     <div class="card-body" style="padding:0" id="sim-rekod-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
   </div>
 </div>
+<!-- SEJARAH PRESTASI SPM JPN -->
+<div class="page" id="page-prestasi-spm-jpn">
+  <div class="sec-hd">
+    <div><div class="sec-title">Sejarah Prestasi SPM 🏆</div><div class="sec-sub">Pencapaian SPM Perniagaan — Peringkat Negeri</div></div>
+    
+  </div>
+
+  <!-- TAPISAN -->
+  <div class="card" style="margin-bottom:16px;overflow:visible">
+    <div class="card-body" style="overflow:visible">
+      <div class="form-grid form-grid-3" style="margin-bottom:12px;overflow:visible">
+        <div class="form-group">
+          <label class="form-label">PPD</label>
+          <select class="form-select" id="spm-jpn-ppd" onchange="spmJpnMuatSekolah()">
+            <option value="">Semua PPD</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sekolah</label>
+          <select class="form-select" id="spm-jpn-sekolah">
+            <option value="">Semua Sekolah</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pentaksiran</label>
+          <div class="dropdown-check" id="spm-jpn-pentaksiran-wrap">
+            <button class="dropdown-check-btn" onclick="toggleDropdownCheck('spm-jpn-ddc')">
+              <span id="spm-jpn-ddc-label">Semua Pentaksiran</span> ▾
+            </button>
+            <div class="dropdown-check-list" id="spm-jpn-ddc" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-primary" onclick="tapis_spm_jpn()">🔍 Papar</button>
+        <button class="btn-ghost" onclick="resetTapisanSpmJpn()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KAD RINGKASAN -->
+  <div id="spm-jpn-kad" style="display:none;margin-bottom:16px">
+    <div class="stats-row stats-5">
+      <div class="stat-card sc-in"><div class="stat-val" id="k-duduki">—</div><div class="stat-lbl">Bil Duduki</div></div>
+      <div class="stat-card sc-em"><div class="stat-val" id="k-a">—</div><div class="stat-lbl">% A</div></div>
+      <div class="stat-card sc-cy"><div class="stat-val" id="k-kredit">—</div><div class="stat-lbl">% Kredit</div></div>
+      <div class="stat-card sc-am"><div class="stat-val" id="k-lulus">—</div><div class="stat-lbl">% Lulus</div></div>
+      <div class="stat-card sc-ro"><div class="stat-val" id="k-gpmp">—</div><div class="stat-lbl">GPMP</div></div>
+    </div>
+  </div>
+
+  <!-- CHART 1: PER PPD -->
+  <div class="card" id="spm-jpn-chart1-wrap" style="display:none;margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title">📊 Prestasi Per PPD</div>
+      <select class="form-select" id="spm-c1-metrik" style="width:140px" onchange="renderChart1()">
+        <option value="gpmp">GPMP</option>
+        <option value="%a">% A</option>
+        <option value="% kredit">% Kredit</option>
+        <option value="%lulus">% Lulus</option>
+        <option value="% gagal">% Gagal</option>
+      </select>
+    </div>
+    <div class="card-body"><canvas id="chart-ppd" height="100"></canvas></div>
+  </div>
+
+  <!-- CHART 2: PER SEKOLAH -->
+  <div class="card" id="spm-jpn-chart2-wrap" style="display:none;margin-bottom:16px">
+    <div class="card-head">
+      <div class="card-title">🏫 Prestasi Per Sekolah</div>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="spm-c2-sekolah" style="width:200px" onchange="renderChart2()">
+          <option value="">— Pilih Sekolah —</option>
+        </select>
+        <select class="form-select" id="spm-c2-metrik" style="width:140px" onchange="renderChart2()">
+          <option value="gpmp">GPMP</option>
+          <option value="%a">% A</option>
+          <option value="% kredit">% Kredit</option>
+          <option value="%lulus">% Lulus</option>
+          <option value="% gagal">% Gagal</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body"><canvas id="chart-sekolah" height="100"></canvas></div>
+  </div>
+
+  <!-- SENARAI SEKOLAH -->
+  <div class="card" id="spm-jpn-jadual-wrap">
+    <div class="card-head">
+      <div class="card-title">📋 Senarai Sekolah</div>
+      <button class="btn-primary" onclick="janaJadualSpmJpn()">🏫 Jana Prestasi Sekolah</button>
+    </div>
+    <div id="jpn-spm-result" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">
+      Klik "Jana Prestasi Sekolah" untuk papar senarai.
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SASARAN ETR -->
+<div class="page" id="page-sasaran-etr">
+  <div class="sec-hd">
+    <div><div class="sec-title">🎯 Tetapan Sasaran Negeri SPM</div><div class="sec-sub">Edu Transformation Result (ETR) — Perniagaan SPM 2026</div></div>
+  </div>
+
+  <!-- MAKLUMAT ASAS -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title">⚙️ Maklumat Asas</div></div>
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Tahun Sasaran</label>
+          <input class="form-input" id="etr-tahun" value="2026" readonly style="background:var(--bg)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">GPN Sasaran Negeri</label>
+          <input class="form-input" id="etr-gpn" type="number" step="0.01" placeholder="4.71">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">📑 Link Excel ETR Sasaran 2026 (Google Sheets)</label>
+        <input class="form-input" id="etr-url" placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing">
+        <div style="font-size:11.5px;color:var(--sub);margin-top:6px">ⓘ Pastikan fail dikongsi sebagai <strong>Anyone with the link can view</strong>. Sistem akan baca lajur: PPD, Kod Sekolah, Nama Sekolah, Bil. Duduki, ETR2026.</div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary" id="btn-proses-etr" onclick="prosesETR()">⚡ Baca & Proses ETR</button>
+        <button class="btn-ghost" onclick="simpanGPNSahaja()">💾 Simpan GPN Sahaja</button>
+        <span id="etr-status" style="font-size:13px;color:var(--ok)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RINGKASAN AGIHAN -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title">📊 Ringkasan Agihan Negeri</div></div>
+    <div class="card-body">
+      <div class="stats-row stats-3">
+        <div class="stat-card sc-em"><div class="stat-val" id="etr-jum-sekolah">—</div><div class="stat-lbl">Jumlah Sekolah</div></div>
+        <div class="stat-card sc-in"><div class="stat-val" id="etr-jum-calon">—</div><div class="stat-lbl">Jumlah Calon</div></div>
+        <div class="stat-card sc-cy"><div class="stat-val" id="etr-had-mata">—</div><div class="stat-lbl">Had Mata GPN</div></div>
+      </div>
+      <div class="stats-row stats-4" style="margin-top:14px">
+        <div class="stat-card" style="background:#ecfdf5"><div class="stat-lbl" style="color:var(--ok)">Kat 1: Cemerlang</div><div class="stat-val" id="etr-k1" style="color:var(--ok);font-size:22px">—</div></div>
+        <div class="stat-card" style="background:#eff6ff"><div class="stat-lbl" style="color:var(--info)">Kat 2: Harapan Tinggi</div><div class="stat-val" id="etr-k2" style="color:var(--info);font-size:22px">—</div></div>
+        <div class="stat-card" style="background:#fffbeb"><div class="stat-lbl" style="color:var(--amber)">Kat 3: Peningkatan</div><div class="stat-val" id="etr-k3" style="color:var(--amber);font-size:22px">—</div></div>
+        <div class="stat-card" style="background:#fef2f2"><div class="stat-lbl" style="color:var(--rose)">Kat 4: Pengukuhan</div><div class="stat-val" id="etr-k4" style="color:var(--rose);font-size:22px">—</div></div>
+      </div>
+      <div style="margin-top:14px;font-size:13px;color:var(--sub)" id="etr-peratus">% Negeri — <span id="etr-pct">—</span></div>
+      <div id="etr-gpn-auto" style="margin-top:12px;background:var(--ink);color:#fff;padding:14px 16px;border-radius:10px;display:none">
+        <div style="font-size:11.5px;opacity:0.8">GPN ETR NEGERI (Auto-Kira)</div>
+        <div style="font-size:24px;font-weight:800;font-family:var(--ffm)" id="etr-gpn-auto-val">—</div>
+        <div style="font-size:12px;opacity:0.8" id="etr-gpn-auto-info">— calon</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SENARAI SEKOLAH -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">🏫 Senarai Sekolah</div></div>
+    <div class="card-body">
+      <div class="form-grid form-grid-2" style="margin-bottom:14px">
+        <input class="form-input" id="etr-cari" placeholder="🔍 Cari sekolah / PPD..." oninput="renderJadualETR()">
+        <select class="form-select" id="etr-fkat" onchange="renderJadualETR()">
+          <option value="">Semua Kategori</option>
+          <option value="1">Kat 1: Cemerlang</option>
+          <option value="2">Kat 2: Harapan Tinggi</option>
+          <option value="3">Kat 3: Peningkatan</option>
+          <option value="4">Kat 4: Pengukuhan</option>
+        </select>
+      </div>
+      <select class="form-select" id="etr-fppd" onchange="renderJadualETR()" style="margin-bottom:14px">
+        <option value="">Semua PPD</option>
+      </select>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="bukaModalHantarSemua()">📤 Hantar Semua ke Sekolah</button>
+        <button class="btn-ghost" onclick="muatSasaranETR()">🔄 Refresh</button>
+        <div style="margin-left:auto;font-size:12px;color:var(--sub);align-self:center" id="etr-status-ringkasan">—</div>
+      </div>
+      <div id="etr-jadual-wrap" style="overflow-x:auto"><div class="empty-state" style="padding:30px"><div class="ico">📋</div><p>Masukkan link sheet & tekan "Baca & Proses ETR"</p></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL EDIT SEKOLAH ETR -->
+<div class="modal-overlay" id="modal-etr-edit">
+  <div class="modal-box" style="max-width:520px;width:92vw;overflow:hidden">
+    <div class="modal-head">
+      <div class="modal-title">✏️ <span id="etr-mod-nama">—</span></div>
+      <button class="modal-close" onclick="tutupModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12.5px">
+        <strong id="etr-mod-kod">—</strong> · <span id="etr-mod-ppd" style="color:var(--sub)">—</span>
+      </div>
+
+      <!-- Calon -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">📋 Jumlah Calon (Sheet Asal)</label>
+          <input class="form-input" id="etr-mod-calon-asal" readonly style="background:var(--bg)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">👥 Jumlah Calon Semasa <span style="color:var(--rose)">*</span></label>
+          <input class="form-input" id="etr-mod-calon" type="number" min="0" oninput="kiraGPModal()">
+        </div>
+</div>
+
+      <!-- Bil Gred -->
+      <div style="margin-bottom:8px;font-weight:700;font-size:13px;color:var(--ink)">📊 Bilangan Gred Semasa</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;min-width:0">
+        <div><label class="form-label" style="color:var(--ok);font-weight:700;font-size:11px">A+</label><input class="form-input" id="etr-mod-aplus" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--ok);font-weight:700;font-size:11px">A</label><input class="form-input" id="etr-mod-a" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--ok);font-weight:700;font-size:11px">A-</label><input class="form-input" id="etr-mod-aminus" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--info);font-weight:700;font-size:11px">B+</label><input class="form-input" id="etr-mod-bplus" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--info);font-weight:700;font-size:11px">B</label><input class="form-input" id="etr-mod-b" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--info);font-weight:700;font-size:11px">C+</label><input class="form-input" id="etr-mod-cplus" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--info);font-weight:700;font-size:11px">C</label><input class="form-input" id="etr-mod-c" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--amber);font-weight:700;font-size:11px">D</label><input class="form-input" id="etr-mod-d" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--amber);font-weight:700;font-size:11px">E</label><input class="form-input" id="etr-mod-e" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+        <div><label class="form-label" style="color:var(--rose);font-weight:700;font-size:11px">G</label><input class="form-input" id="etr-mod-g" type="number" min="0" oninput="kiraGPModal()" style="padding:6px 4px;font-size:13px;text-align:center;min-width:0;width:100%"></div>
+      </div>
+
+      <!-- Status Tally -->
+      <div id="etr-mod-tally" style="padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px"></div>
+
+      <!-- GP Live -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+        <div style="background:#1e293b;color:#fff;padding:12px;border-radius:10px;min-width:0">
+          <div style="font-size:10px;opacity:0.8">GP ETR ASAL (Sheet)</div>
+          <div id="etr-mod-gp-asal" style="font-size:20px;font-weight:800;font-family:var(--ffm);color:#fff">—</div>
+          <div id="etr-mod-kat-asal" style="font-size:10px;opacity:0.8;color:#fff">—</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#1a3c5e,#0f5132);color:#fff;padding:12px;border-radius:10px;min-width:0">
+          <div style="font-size:10px;opacity:0.8">GP ETR SEMASA (Auto-Kira)</div>
+          <div id="etr-mod-gp" style="font-size:20px;font-weight:800;font-family:var(--ffm)">—</div>
+          <div id="etr-mod-kat" style="font-size:10px;opacity:0.9">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn-ghost" onclick="autoIsiModal()" style="background:#fef3c7;color:#92400e">🔄 Auto Isi Ikut Calon</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+        <button class="btn-primary" onclick="simpanETRModal()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HANTAR SEMUA -->
+<div class="modal-overlay" id="modal-etr-hantar">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">📤 Hantar Sasaran ke Sekolah</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body" style="overflow-x:hidden;overflow-y:auto;max-height:65vh">
+      <div class="alert alert-warn" style="margin-bottom:14px">⚠️ Hanya sekolah dengan status <strong>DRAF</strong> akan dihantar. Sekolah yang sudah dihantar akan dilangkau.</div>
+      <div id="etr-hantar-info" style="background:var(--bg);padding:14px;border-radius:8px;font-size:13px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button class="btn-primary" onclick="doHantarSemua()">📤 Hantar Semua</button>
+    </div>
+  </div>
+</div>
+
 </main>
+
+<!-- MODAL EDIT SEKOLAH -->
+<div class="modal-overlay" id="modal-edit-sekolah">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-head"><div class="modal-title">✏️ Edit Sekolah</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-skl-id">
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Kod Sekolah</label><input class="form-input" id="edit-skl-kod" placeholder="Contoh: KEA1001"></div>
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nama Sekolah</label><input class="form-input" id="edit-skl-nama" placeholder="Nama penuh sekolah"></div>
+      <div class="form-group"><label class="form-label">PPD</label><select class="form-select" id="edit-skl-ppd"></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button class="btn-primary" onclick="simpanEditSekolah()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay" id="modal-konfirm">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title" id="konfirm-tajuk">Sahkan Tindakan</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="konfirm-mesej" style="font-size:14px;color:var(--text);line-height:1.6"></div>
+      <div id="konfirm-notis" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <div class="modal-overlay" id="modal-tambah-sekolah">
@@ -506,9 +850,26 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
+var _konfirmCb=null;
+function bukaKonfirm(tajuk,mesej,notis,labelBtn,klasBtn,cb){
+  _konfirmCb=cb;
+  document.getElementById('konfirm-tajuk').textContent=tajuk;
+  document.getElementById('konfirm-mesej').textContent=mesej;
+  const notisEl=document.getElementById('konfirm-notis');
+  if(notis){notisEl.style.display='block';notisEl.innerHTML='<div class="alert alert-warn">⚠️ '+notis+'</div>';}
+  else{notisEl.style.display='none';}
+  const btn=document.getElementById('konfirm-btn');
+  btn.textContent=labelBtn||'Sahkan';
+  btn.className='btn-'+(klasBtn||'danger');
+  bukaModal('modal-konfirm');
+}
+function _konfirmExec(){tutupModal();if(_konfirmCb)_konfirmCb();_konfirmCb=null;}
+
 var _sekolahAll=[], _ppdAll=[];
 var _skpspSemua = []; // Menyimpan semua SP untuk dropdown K1 & K2
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
@@ -567,6 +928,32 @@ async function muatLogAktiviti(){
     </div>`).join('');
 }
 
+function bukaEditSekolah(id,kod,nama,kodPpd){
+  document.getElementById('edit-skl-id').value=id;
+  document.getElementById('edit-skl-kod').value=kod;
+  document.getElementById('edit-skl-nama').value=nama;
+  const opts=_ppdAll.map(p=>`<option value="${p.kod_ppd}" ${p.kod_ppd===kodPpd?'selected':''}>${p.nama_ppd}</option>`).join('');
+  document.getElementById('edit-skl-ppd').innerHTML=opts;
+  bukaModal('modal-edit-sekolah');
+}
+async function simpanEditSekolah(){
+  const id=document.getElementById('edit-skl-id').value;
+  const kod=document.getElementById('edit-skl-kod').value.trim().toUpperCase();
+  const nama=document.getElementById('edit-skl-nama').value.trim().toUpperCase();
+  const ppd=document.getElementById('edit-skl-ppd').value;
+  if(!kod||!nama||!ppd){tunjukToast('⚠️ Sila isi semua maklumat.','warn');return;}
+  const{error}=await db.from('sekolah').update({kod_sekolah:kod,nama_sekolah:nama,kod_ppd:ppd}).eq('id',id);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ Sekolah dikemaskini.','success');muatSekolah();
+}
+async function padamSekolah(id,nama){
+  bukaKonfirm('Padam Sekolah','Padam sekolah '+nama+'?','Semua pengguna sekolah ini mungkin terjejas.','Ya, Padam','danger',async()=>{
+    const{error}=await db.from('sekolah').delete().eq('id',id);
+    if(error){tunjukToast('❌ '+error.message,'error');return;}
+    tunjukToast('✅ Sekolah dipadam.','success');muatSekolah();
+  });
+}
+
 async function muatSekolah(){
   const ppd=document.getElementById('filter-ppd')?.value||'';
   let q=db.from('sekolah').select('*').order('nama_sekolah');
@@ -576,12 +963,16 @@ async function muatSekolah(){
   document.getElementById('skl-count').textContent=_sekolahAll.length+' sekolah';
   document.getElementById('sekolah-body').innerHTML=`
     <table class="data-table">
-      <thead><tr><th>Kod</th><th>Nama Sekolah</th><th>PPD</th><th>Status</th></tr></thead>
+      <thead><tr><th>Kod</th><th>Nama Sekolah</th><th>PPD</th><th>Status</th><th>Tindakan</th></tr></thead>
       <tbody>${_sekolahAll.map(s=>`<tr>
         <td style="font-family:var(--ffm);font-weight:700">${s.kod_sekolah}</td>
         <td style="font-weight:600">${s.nama_sekolah}</td>
         <td style="font-size:12px;color:var(--sub)">${(s.kod_ppd||'').replace('PPD_','PPD ').replace(/_/g,' ')}</td>
         <td><span class="sp ${s.status==='AKTIF'?'sp-ok':'sp-err'}">${s.status}</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-ghost" style="font-size:11.5px;padding:4px 10px" onclick="bukaEditSekolah('${s.id}','${s.kod_sekolah}','${(s.nama_sekolah||'').replace(/'/g,"\\'")}','${s.kod_ppd}')">✏️ Edit</button>
+          <button class="btn-danger" style="font-size:11.5px;padding:4px 10px" onclick="padamSekolah('${s.id}','${s.nama_sekolah}')">🗑</button>
+        </td>
       </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -590,11 +981,14 @@ async function muatPPDList(){
   const{data}=await db.from('ppd').select('*').order('nama_ppd');
   _ppdAll=data||[];
   const opts=_ppdAll.map(p=>`<option value="${p.kod_ppd}">${p.nama_ppd}</option>`).join('');
-  ['filter-ppd','skl-ppd','usr-ppd-sel','af-ppd'].forEach(id=>{
+  const optsNama=_ppdAll.map(p=>`<option value="${p.nama_ppd}">${p.nama_ppd}</option>`).join('');
+  ['filter-ppd','skl-ppd','usr-ppd-sel'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
-    const prefix=id==='filter-ppd'||id==='af-ppd'?'<option value="">Semua Daerah</option>':'';
+    const prefix=id==='filter-ppd'?'<option value="">Semua Daerah</option>':'';
     el.innerHTML=prefix+opts;
   });
+  const afPpd=document.getElementById('af-ppd');
+  if(afPpd) afPpd.innerHTML='<option value="">Semua Daerah</option>'+optsNama;
   const sOpts=_sekolahAll.map(s=>`<option value="${s.kod_sekolah}">${s.nama_sekolah}</option>`).join('');
   const usrSkl=document.getElementById('usr-sekolah');
   if(usrSkl) usrSkl.innerHTML=sOpts;
@@ -646,9 +1040,10 @@ async function simpanPengguna(){
 }
 
 async function padamPengguna(id){
-  if(!confirm('Nonaktifkan pengguna '+id+'?')) return;
-  await db.from('pengguna').update({status:'TIDAK AKTIF'}).eq('id',id);
-  tunjukToast('✅ Pengguna dinonaktifkan.','success');muatPengguna();
+  bukaKonfirm('Nyahaktifkan Pengguna','Adakah anda pasti mahu nyahaktifkan pengguna '+id+'?',null,'Ya, Nyahaktifkan','danger',async()=>{
+    await db.from('pengguna').update({status:'TIDAK AKTIF'}).eq('id',id);
+    tunjukToast('✅ Pengguna dinyahaktifkan.','success');muatPengguna();
+  });
 }
 
 async function simpanSekolah(){
@@ -674,13 +1069,50 @@ async function muatTetapan(){
     </table>`;
 }
 
+async function muatSekolahAnalisis(){
+  const ppd=document.getElementById('af-ppd').value;
+  const sel=document.getElementById('af-sekolah');
+  sel.innerHTML='<option value="">Semua Sekolah</option>';
+  document.getElementById('af-cari-sekolah').value='';
+  let senarai=_sekolahAll;
+  if(ppd) senarai=senarai.filter(s=>{
+    const ppdObj=_ppdAll.find(p=>p.nama_ppd===ppd);
+    return ppdObj&&s.kod_ppd===ppdObj.kod_ppd;
+  });
+  senarai.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`;
+  });
+}
+function cariSekolahAnalisis(){
+  const cari=(document.getElementById('af-cari-sekolah').value||'').toLowerCase();
+  const ppd=document.getElementById('af-ppd').value;
+  const sel=document.getElementById('af-sekolah');
+  sel.innerHTML='<option value="">Semua Sekolah</option>';
+  let senarai=_sekolahAll;
+  if(ppd){ const ppdObj=_ppdAll.find(p=>p.nama_ppd===ppd); if(ppdObj) senarai=senarai.filter(s=>s.kod_ppd===ppdObj.kod_ppd); }
+  if(cari) senarai=senarai.filter(s=>s.kod_sekolah.toLowerCase().includes(cari)||s.nama_sekolah.toLowerCase().includes(cari));
+  senarai.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`;
+  });
+}
 async function muatAnalisis(){
-  const params={
-    tingkatan:        document.getElementById('af-ting').value,
-    jenisPentaksiran: document.getElementById('af-jenis').value,
-    tahun:            document.getElementById('af-tahun').value,
-    ppd:              document.getElementById('af-ppd').value
+  const ppdVal=document.getElementById('af-ppd').value;
+  const sklVal=document.getElementById('af-sekolah').value;
+  const ppdNama=document.getElementById('af-ppd').options[document.getElementById('af-ppd').selectedIndex]?.text||'';
+  const sklNama=document.getElementById('af-sekolah').options[document.getElementById('af-sekolah').selectedIndex]?.text||'';
+  const jenisPentaksiran=document.getElementById('af-jenis').value;
+  const tingkatan=document.getElementById('af-ting').value;
+  const tahun=document.getElementById('af-tahun').value;
+  const params={tingkatan, jenisPentaksiran, tahun, ppd:ppdVal, sekolah:sklVal};
+  window._cetakParams={
+    tingkatan,
+    jenisPentaksiran: jenisPentaksiran||'Semua',
+    tahun,
+    ppd: ppdVal ? ppdNama : '',
+    sekolah: sklVal ? sklNama : ''
   };
+  const subTitle = sklVal ? sklNama : ppdVal ? ppdNama : 'Semua Sekolah — Negeri Kedah';
+  document.querySelector('#page-analisis .sec-sub').textContent = subTitle;
   await muatAnalisisSupa(params,'JPN','analisis-result');
 }
 
@@ -726,7 +1158,7 @@ async function doSimulasi(){
   const ting   = document.getElementById('sim-ting').value;
   const bil    = parseInt(document.getElementById('sim-bil').value)||5;
   if(!kodSkl||!jenis){tunjukToast('⚠️ Sila pilih sekolah dan jenis pentaksiran.','warn');return;}
-  if(!confirm('Jana '+bil+' tapak simulasi untuk '+namaSkl+'? Proses ini mengambil masa ~'+Math.ceil(bil*8/60)+' minit.')) return;
+  bukaKonfirm('Jana Tapak Simulasi','Jana '+bil+' tapak simulasi untuk '+namaSkl+'?','Proses ini mengambil masa ~'+Math.ceil(bil*8/60)+' minit.','Ya, Jana','primary',async()=>{
 
   const{data:sklData}=await db.from('sekolah').select('kod_ppd').eq('kod_sekolah',kodSkl).single();
   const{data:ppdData}=await db.from('ppd').select('nama_ppd').eq('kod_ppd',sklData?.kod_ppd||'').single();
@@ -838,13 +1270,14 @@ async function doSimulasi(){
     btn.disabled=false;
     btn.innerHTML='🧪 Jana Simulasi';
   }
+  });
 }
 
 async function doPadamSimulasi(){
   const kodSkl=document.getElementById('sim-padam-sekolah').value;
   const jenis=document.getElementById('sim-padam-jenis').value;
   if(!kodSkl){tunjukToast('⚠️ Sila pilih sekolah.','warn');return;}
-  if(!confirm('Padam SEMUA data simulasi untuk sekolah ini? Tindakan tidak boleh dibatalkan.')) return;
+  bukaKonfirm('Padam Data Simulasi','Padam SEMUA data simulasi untuk sekolah ini?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const btn=document.getElementById('btn-sim-padam');
   btn.disabled=true; btn.textContent='⏳ Memadam...';
   try{
@@ -868,6 +1301,7 @@ async function doPadamSimulasi(){
     btn.disabled=false;
     btn.textContent='🗑 Padam Simulasi';
   }
+  });
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
 
@@ -959,10 +1393,11 @@ async function kemasSKPSP(){
 async function padamSKPSP(){
   const id=document.getElementById('edit-skpsp-id').value;
   const kod=document.getElementById('edit-skpsp-kod').value;
-  if(!confirm('Padam SP '+kod+'? Tindakan ini tidak boleh dibatalkan.')) return;
+  bukaKonfirm('Padam SP','Padam SP '+kod+'?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const{error}=await db.from('skpsp').delete().eq('id',id);
   if(error){tunjukToast('❌ '+error.message,'error');return;}
   tutupModal();tunjukToast('✅ SP dipadam.','success');muatSKPSP();
+  });
 }
 
 async function muatTetapanK1(){
@@ -1355,12 +1790,13 @@ async function editGridK2(ting, jenis, tahun){
 }
 
 async function padamSetK2(ting, jenis, tahun){
-  if(!confirm('Padam semua tetapan K2 untuk T'+ting+' '+kodJenis(jenis)+' '+tahun+'?')) return;
+  bukaKonfirm('Padam Tetapan K2','Padam semua tetapan K2 untuk T'+ting+' '+kodJenis(jenis)+' '+tahun+'?','Tindakan ini tidak boleh dibatalkan.','Ya, Padam','danger',async()=>{
   const{error}=await db.from('tetapan_k2').delete()
     .eq('tingkatan',ting).eq('jenis_pentaksiran',jenis).eq('tahun',tahun);
   if(error){tunjukToast('❌ '+error.message,'error');return;}
   tunjukToast('✅ Set K2 dipadam.','success');
   muatTetapanK2();
+  });
 }
 
 async function simpanTetapanK2(){
@@ -1386,9 +1822,10 @@ async function simpanTetapanK2(){
 }
 
 async function padamK2(id){
-  if(!confirm('Padam soalan K2 ini?')) return;
+  bukaKonfirm('Padam Soalan K2','Adakah anda pasti mahu memadam soalan K2 ini?',null,'Ya, Padam','danger',async()=>{
   await db.from('tetapan_k2').delete().eq('id',id);
   tunjukToast('✅ Dipadam.','success');muatTetapanK2();
+  });
 }
 
 function janaGridK1() {
@@ -1526,7 +1963,7 @@ async function jalankanPushSP() {
   const tahun = document.getElementById('push-tahun').value;
   const jenis = document.getElementById('push-jenis').value;
   
-  if (!confirm(`Adakah anda pasti untuk PUSH SP terkini bagi ${jenis} (${tahun}) ke semua tapak guru? Proses ini mungkin mengambil masa beberapa minit bergantung kepada jumlah tapak.`)) return;
+  bukaKonfirm('Push SP ke Tapak Guru','Push SP terkini bagi '+kodJenis(jenis)+' ('+tahun+') ke semua tapak guru?','Proses ini mungkin mengambil masa beberapa minit. Semua tapak guru akan terjejas.','Ya, Push','primary',async()=>{
 
   const btn = document.getElementById('btn-push-sp');
   btn.disabled = true;
@@ -1557,6 +1994,790 @@ async function jalankanPushSP() {
     btn.disabled = false;
     btn.innerHTML = '🔄 Push Sekarang';
   }
+  });
+}
+
+// ================================================================
+// MODUL SASARAN ETR — JPN
+// ================================================================
+var _etrData = [];
+var _etrPPDList = [];
+
+async function muatSasaranETR() {
+  // Muat GPN dan URL dari tetapan_umum
+  const { data: tetap } = await db.from('tetapan_umum')
+    .select('kunci,nilai')
+    .in('kunci', ['gpn_negeri_2026','etr_sheet_url']);
+  if (tetap) {
+    tetap.forEach(t => {
+      if (t.kunci === 'gpn_negeri_2026') document.getElementById('etr-gpn').value = t.nilai || '';
+      if (t.kunci === 'etr_sheet_url') document.getElementById('etr-url').value = t.nilai || '';
+    });
+  }
+  // Muat data ETR sedia ada
+  const { data, error } = await db.from('etr_sasaran').select('*').eq('tahun','2026').order('etr_gp');
+  if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  _etrData = data || [];
+  if (_etrData.length) {
+    document.getElementById('etr-status').textContent = '✓ '+_etrData.length+' sekolah dimuatkan dari data tersimpan (2026).';
+    kiraRingkasanETR();
+    isiPPDDropdown();
+    renderJadualETR();
+  }
+}
+
+function kiraGPSekolah(s) {
+  const jum = (s.bil_aplus||0)+(s.bil_a||0)+(s.bil_aminus||0)+(s.bil_bplus||0)+(s.bil_b||0)+(s.bil_cplus||0)+(s.bil_c||0)+(s.bil_d||0)+(s.bil_e||0)+(s.bil_g||0);
+  if (!jum) return 0;
+  const tot = (s.bil_aplus||0)*0 + (s.bil_a||0)*1 + (s.bil_aminus||0)*2 + (s.bil_bplus||0)*3 + (s.bil_b||0)*4 + (s.bil_cplus||0)*5 + (s.bil_c||0)*6 + (s.bil_d||0)*7 + (s.bil_e||0)*8 + (s.bil_g||0)*9;
+  return Math.round((tot/jum)*100)/100;
+}
+
+function kategoriSekolah(gp) {
+  if (gp <= 2.00) return 1;
+  if (gp <= 3.99) return 2;
+  if (gp <= 6.99) return 3;
+  return 4;
+}
+
+function labelKat(k) {
+  return ['','Kat 1: Cemerlang','Kat 2: Harapan Tinggi','Kat 3: Peningkatan','Kat 4: Pengukuhan'][k] || '—';
+}
+
+function warnaKat(k) {
+  return ['','var(--ok)','var(--info)','var(--amber)','var(--rose)'][k] || 'var(--sub)';
+}
+
+async function prosesETR() {
+  const url = document.getElementById('etr-url').value.trim();
+  const gpn = document.getElementById('etr-gpn').value.trim();
+  if (!url) { tunjukToast('⚠️ Masukkan link sheet dahulu.','warn'); return; }
+  if (!gpn) { tunjukToast('⚠️ Masukkan GPN Sasaran Negeri.','warn'); return; }
+
+  // Extract spreadsheet ID
+  const m = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!m) { tunjukToast('❌ Link sheet tidak sah.','error'); return; }
+  const ssId = m[1];
+
+  const btn = document.getElementById('btn-proses-etr');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Memproses...';
+
+  try {
+    const fetchUrl = 'https://docs.google.com/spreadsheets/d/'+ssId+'/gviz/tq?tqx=out:json&sheet=Sheet1';
+    const res = await fetch(fetchUrl);
+    const txt = await res.text();
+    const json = JSON.parse(txt.substring(txt.indexOf('{'), txt.lastIndexOf('}')+1));
+    const cols = json.table.cols.map(c => (c.label||'').toUpperCase().trim());
+    const rows = json.table.rows;
+
+    // Cari index kolum
+    const idx = (nama) => cols.findIndex(c => c === nama.toUpperCase());
+    const iPPD = idx('PPD'), iKod = idx('KodSekolah'), iNama = idx('NamaSekolah'), iJum = idx('jumCalon');
+    const iAp = idx('Bil A+'), iA = idx('Bil A'), iAm = idx('Bil A-');
+    const iBp = idx('Bil B+'), iB = idx('Bil B'), iCp = idx('Bil C+'), iC = idx('Bil C');
+    const iD = idx('Bil D'), iE = idx('Bil E'), iG = idx('Bil G');
+
+    if (iKod < 0 || iJum < 0) throw new Error('Kolum KodSekolah/jumCalon tidak dijumpai.');
+
+    const rekod = [];
+    rows.forEach(r => {
+      if (!r.c) return;
+      const get = (i) => r.c[i] && r.c[i].v != null ? r.c[i].v : (i < 5 ? '' : 0);
+      const kod = String(get(iKod)||'').trim();
+      if (!kod) return;
+      const s = {
+        tahun: '2026', ppd: String(get(iPPD)||''),
+        kod_sekolah: kod, nama_sekolah: String(get(iNama)||''),
+        jum_calon: Number(get(iJum)||0),
+        bil_aplus: Math.max(0,Number(get(iAp)||0)),
+        bil_a: Math.max(0,Number(get(iA)||0)),
+        bil_aminus: Math.max(0,Number(get(iAm)||0)),
+        bil_bplus: Math.max(0,Number(get(iBp)||0)),
+        bil_b: Math.max(0,Number(get(iB)||0)),
+        bil_cplus: Math.max(0,Number(get(iCp)||0)),
+        bil_c: Math.max(0,Number(get(iC)||0)),
+        bil_d: Math.max(0,Number(get(iD)||0)),
+        bil_e: Math.max(0,Number(get(iE)||0)),
+        bil_g: Math.max(0,Number(get(iG)||0))
+      };
+      s.etr_gp = kiraGPSekolah(s);
+      s.kategori = kategoriSekolah(s.etr_gp);
+      rekod.push(s);
+    });
+
+    if (!rekod.length) throw new Error('Tiada data sah dalam sheet.');
+
+    // Upsert ke Supabase
+    const { error } = await db.from('etr_sasaran').upsert(rekod, { onConflict: 'tahun,kod_sekolah' });
+    if (error) throw new Error(error.message);
+
+    // Simpan GPN & URL
+    await db.from('tetapan_umum').upsert([
+      { kunci: 'gpn_negeri_2026', nilai: gpn },
+      { kunci: 'etr_sheet_url', nilai: url }
+    ]);
+
+    _etrData = rekod;
+    document.getElementById('etr-status').textContent = '✅ '+rekod.length+' sekolah berjaya diproses & disimpan.';
+    tunjukToast('✅ '+rekod.length+' sekolah disimpan!','success');
+    kiraRingkasanETR();
+    isiPPDDropdown();
+    renderJadualETR();
+  } catch(e) {
+    tunjukToast('❌ '+e.message,'error',5000);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Baca & Proses ETR';
+  }
+}
+
+async function simpanGPNSahaja() {
+  const gpn = document.getElementById('etr-gpn').value.trim();
+  if (!gpn) { tunjukToast('⚠️ Masukkan GPN.','warn'); return; }
+  const { error } = await db.from('tetapan_umum').upsert({ kunci:'gpn_negeri_2026', nilai: gpn });
+  if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  tunjukToast('✅ GPN '+gpn+' disimpan.','success');
+}
+
+function kiraRingkasanETR() {
+  const d = _etrData;
+  const jumSek = d.length;
+  const jumCalon = d.reduce((s,x)=>s+(x.jum_calon||0),0);
+  const hadMata = jumCalon * 9;
+  const jumMata = d.reduce((s,x)=>{
+    return s + (x.bil_aplus*0+x.bil_a*1+x.bil_aminus*2+x.bil_bplus*3+x.bil_b*4+x.bil_cplus*5+x.bil_c*6+x.bil_d*7+x.bil_e*8+x.bil_g*9);
+  },0);
+  const gpnAuto = jumCalon ? Math.round((jumMata/jumCalon)*100)/100 : 0;
+
+  document.getElementById('etr-jum-sekolah').textContent = jumSek;
+  document.getElementById('etr-jum-calon').textContent = jumCalon.toLocaleString();
+  document.getElementById('etr-had-mata').textContent = hadMata.toLocaleString();
+
+  const k = [0,0,0,0,0];
+  d.forEach(x => { k[x.kategori||3]++; });
+  document.getElementById('etr-k1').textContent = k[1]+' sekolah';
+  document.getElementById('etr-k2').textContent = k[2]+' sekolah';
+  document.getElementById('etr-k3').textContent = k[3]+' sekolah';
+  document.getElementById('etr-k4').textContent = k[4]+' sekolah';
+
+  // % gred negeri
+  const totGred = {
+    cemerlang: d.reduce((s,x)=>s+(x.bil_aplus+x.bil_a+x.bil_aminus),0),
+    kepujian:  d.reduce((s,x)=>s+(x.bil_bplus+x.bil_b+x.bil_cplus+x.bil_c),0),
+    lulus:     d.reduce((s,x)=>s+(x.bil_d+x.bil_e),0),
+    gagal:     d.reduce((s,x)=>s+x.bil_g,0)
+  };
+  const pct = (n) => jumCalon ? Math.round((n/jumCalon)*100) : 0;
+  document.getElementById('etr-pct').innerHTML = 
+    'Cemerlang: <strong>'+pct(totGred.cemerlang)+'%</strong> | '+
+    'Kepujian: <strong>'+pct(totGred.kepujian)+'%</strong> | '+
+    'Lulus: <strong>'+pct(totGred.lulus)+'%</strong> | '+
+    'Gagal: <strong>'+pct(totGred.gagal)+'%</strong>';
+
+  if (jumCalon) {
+    document.getElementById('etr-gpn-auto').style.display = 'block';
+    document.getElementById('etr-gpn-auto-val').textContent = gpnAuto.toFixed(2);
+    document.getElementById('etr-gpn-auto-info').textContent = jumCalon.toLocaleString()+' calon';
+  }
+}
+
+function isiPPDDropdown() {
+  const set = new Set();
+  _etrData.forEach(s => { if (s.ppd) set.add(s.ppd); });
+  _etrPPDList = Array.from(set).sort();
+  const sel = document.getElementById('etr-fppd');
+  sel.innerHTML = '<option value="">Semua PPD</option>' + _etrPPDList.map(p => '<option value="'+p+'">'+p+'</option>').join('');
+}
+
+function sumGred(s, suffix) {
+  const sfx = suffix || '';
+  return (s['bil_aplus'+sfx]||0)+(s['bil_a'+sfx]||0)+(s['bil_aminus'+sfx]||0)+(s['bil_bplus'+sfx]||0)+(s['bil_b'+sfx]||0)+(s['bil_cplus'+sfx]||0)+(s['bil_c'+sfx]||0)+(s['bil_d'+sfx]||0)+(s['bil_e'+sfx]||0)+(s['bil_g'+sfx]||0);
+}
+
+function statusBadge(s) {
+  const ada = s.jum_calon_semasa > 0 || sumGred(s,'_semasa') > 0;
+  const sh = s.status_hantar || 'DRAF';
+  const ss = s.status_sekolah || 'BELUM_TERIMA';
+  if (ss === 'DIHANTAR_SEKOLAH') return '<span class="sp" style="background:#d1fae5;color:#065f46">✓ Sekolah Hantar</span>';
+  if (ss === 'DISEMAK') return '<span class="sp" style="background:#fef3c7;color:#92400e">📝 Sedang Disemak</span>';
+  if (sh === 'DIHANTAR') return '<span class="sp" style="background:#dbeafe;color:#1e40af">📤 Dihantar</span>';
+  return '<span class="sp" style="background:#f3f4f6;color:#374151">📋 Draf</span>';
+}
+
+function ikonKontra(s) {
+  // Guna data semasa jika ada, kalau tak guna asal
+  const calon = s.jum_calon_semasa > 0 ? s.jum_calon_semasa : s.jum_calon;
+  const sumS = sumGred(s,'_semasa');
+  const sum = sumS > 0 ? sumS : sumGred(s);
+  if (!calon) return '';
+  if (sum !== calon) {
+    return '<span title="Bil gred ('+sum+') ≠ Calon ('+calon+'). Beza: '+(sum-calon)+'" style="color:var(--amber);cursor:help">⚠️</span>';
+  }
+  return '';
+}
+
+function renderJadualETR() {
+  const cari = document.getElementById('etr-cari').value.toLowerCase();
+  const fkat = document.getElementById('etr-fkat').value;
+  const fppd = document.getElementById('etr-fppd').value;
+  let list = _etrData.slice();
+  if (cari) list = list.filter(s => (s.nama_sekolah||'').toLowerCase().includes(cari) || (s.ppd||'').toLowerCase().includes(cari) || (s.kod_sekolah||'').toLowerCase().includes(cari));
+  if (fkat) list = list.filter(s => String(s.kategori) === fkat);
+  if (fppd) list = list.filter(s => s.ppd === fppd);
+  list.sort((a,b) => (a.etr_gp||0) - (b.etr_gp||0));
+
+  // Update ringkasan status
+  const drf = _etrData.filter(s => (s.status_hantar||'DRAF') === 'DRAF').length;
+  const hnt = _etrData.filter(s => s.status_hantar === 'DIHANTAR').length;
+  const sel = _etrData.filter(s => s.status_sekolah === 'DIHANTAR_SEKOLAH').length;
+  document.getElementById('etr-status-ringkasan').innerHTML = '📋 Draf: <strong>'+drf+'</strong> | 📤 Dihantar: <strong>'+hnt+'</strong> | ✓ Sekolah Hantar: <strong>'+sel+'</strong>';
+
+  const wrap = document.getElementById('etr-jadual-wrap');
+  if (!list.length) { wrap.innerHTML = '<div class="empty-state" style="padding:30px"><p>Tiada data.</p></div>'; return; }
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead>
+      <tr>
+        <th>PPD</th><th>Sekolah</th><th>Kat</th><th>Calon Asal</th><th>Calon Semasa</th>
+        <th>ETR Asal</th><th>ETR Semasa</th><th>Status</th><th>Kemaskini</th><th></th>
+      </tr>
+    </thead>
+    <tbody>${list.map(s => {
+      const gpSemasa = s.etr_gp_semasa || 0;
+      const ada = s.jum_calon_semasa > 0 || sumGred(s,'_semasa') > 0;
+      const tarikh = s.tarikh_sekolah || s.tarikh_hantar;
+      const tarikhStr = tarikh ? new Date(tarikh).toLocaleString('ms-MY',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+      const bolehUndo = s.status_hantar === 'DIHANTAR' && s.status_sekolah !== 'DISEMAK' && s.status_sekolah !== 'DIHANTAR_SEKOLAH';
+      return `<tr>
+      <td style="font-size:11.5px;color:var(--sub)">${s.ppd||'—'}</td>
+      <td><strong>${s.nama_sekolah||'—'}</strong> ${ikonKontra(s)}<div style="font-size:11px;color:var(--sub)">${s.kod_sekolah}</div></td>
+      <td><strong style="color:${warnaKat(s.kategori)}">Kat ${s.kategori}</strong></td>
+      <td style="font-family:var(--ffm)">${s.jum_calon||0}</td>
+      <td style="font-family:var(--ffm);font-weight:700">${s.jum_calon_semasa||'—'}</td>
+      <td style="font-family:var(--ffm);color:${warnaKat(s.kategori)}">${(s.etr_gp||0).toFixed(2)}</td>
+      <td style="font-family:var(--ffm);font-weight:800;color:${ada?warnaKat(kategoriSekolah(gpSemasa)):'var(--sub)'}">${ada?gpSemasa.toFixed(2):'—'}</td>
+      <td>${statusBadge(s)}</td>
+      <td style="font-size:11px;color:var(--sub)">${tarikhStr}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-ghost" style="font-size:11.5px;padding:4px 10px" onclick="bukaModalETR('${s.kod_sekolah}')">✏️ Edit</button>
+        ${bolehUndo?`<button class="btn-ghost" style="font-size:11.5px;padding:4px 10px;color:var(--rose)" onclick="undoHantar('${s.kod_sekolah}')">↩ Tarik Balik</button>`:''}
+      </td>
+    </tr>`}).join('')}</tbody>
+  </table>`;
+}
+
+// ── MODAL EDIT
+var _etrModSekolah = null;
+
+function bukaModalETR(kod) {
+  const s = _etrData.find(x => x.kod_sekolah === kod);
+  if (!s) return;
+  _etrModSekolah = s;
+  document.getElementById('etr-mod-nama').textContent = s.nama_sekolah || '—';
+  document.getElementById('etr-mod-kod').textContent = s.kod_sekolah;
+  document.getElementById('etr-mod-ppd').textContent = s.ppd || '—';
+  document.getElementById('etr-mod-calon-asal').value = s.jum_calon || 0;
+  document.getElementById('etr-mod-calon').value = s.jum_calon_semasa || s.jum_calon || 0;
+  document.getElementById('etr-mod-aplus').value = s.bil_aplus_semasa || s.bil_aplus || 0;
+  document.getElementById('etr-mod-a').value = s.bil_a_semasa || s.bil_a || 0;
+  document.getElementById('etr-mod-aminus').value = s.bil_aminus_semasa || s.bil_aminus || 0;
+  document.getElementById('etr-mod-bplus').value = s.bil_bplus_semasa || s.bil_bplus || 0;
+  document.getElementById('etr-mod-b').value = s.bil_b_semasa || s.bil_b || 0;
+  document.getElementById('etr-mod-cplus').value = s.bil_cplus_semasa || s.bil_cplus || 0;
+  document.getElementById('etr-mod-c').value = s.bil_c_semasa || s.bil_c || 0;
+  document.getElementById('etr-mod-d').value = s.bil_d_semasa || s.bil_d || 0;
+  document.getElementById('etr-mod-e').value = s.bil_e_semasa || s.bil_e || 0;
+  document.getElementById('etr-mod-g').value = s.bil_g_semasa || s.bil_g || 0;
+  document.getElementById('etr-mod-gp-asal').textContent = (s.etr_gp||0).toFixed(2);
+  document.getElementById('etr-mod-kat-asal').textContent = labelKat(s.kategori);
+  document.getElementById('etr-mod-gp').textContent = (s.etr_gp_semasa||s.etr_gp||0).toFixed(2);
+  document.getElementById('etr-mod-kat').textContent = labelKat(kategoriSekolah(s.etr_gp_semasa||s.etr_gp||0));
+  bukaModal('modal-etr-edit');
+  kiraGPModal();
+}
+
+function ambilGredModal() {
+  const get = (id) => Math.max(0, parseInt(document.getElementById(id).value) || 0);
+  return {
+    aplus: get('etr-mod-aplus'), a: get('etr-mod-a'), aminus: get('etr-mod-aminus'),
+    bplus: get('etr-mod-bplus'), b: get('etr-mod-b'), cplus: get('etr-mod-cplus'), c: get('etr-mod-c'),
+    d: get('etr-mod-d'), e: get('etr-mod-e'), g: get('etr-mod-g'),
+    calon: get('etr-mod-calon')
+  };
+}
+
+function kiraGPModal() {
+  const x = ambilGredModal();
+  const sum = x.aplus+x.a+x.aminus+x.bplus+x.b+x.cplus+x.c+x.d+x.e+x.g;
+  const tot = x.aplus*0+x.a*1+x.aminus*2+x.bplus*3+x.b*4+x.cplus*5+x.c*6+x.d*7+x.e*8+x.g*9;
+  const gp = x.calon ? Math.round((tot/x.calon)*100)/100 : 0;
+  const kat = kategoriSekolah(gp);
+  document.getElementById('etr-mod-gp').textContent = gp.toFixed(2);
+  document.getElementById('etr-mod-kat').textContent = labelKat(kat);
+
+  const tally = document.getElementById('etr-mod-tally');
+  if (sum === x.calon) {
+    tally.style.background = '#d1fae5';
+    tally.style.color = '#065f46';
+    tally.innerHTML = '✓ Tally: SUM gred ('+sum+') = Calon Semasa ('+x.calon+')';
+  } else {
+    tally.style.background = '#fef3c7';
+    tally.style.color = '#92400e';
+    tally.innerHTML = '⚠️ Tidak Tally: SUM gred ('+sum+') ≠ Calon Semasa ('+x.calon+'). Beza: <strong>'+(sum-x.calon)+'</strong>';
+  }
+}
+
+function autoIsiModal() {
+  const s = _etrModSekolah;
+  if (!s) return;
+  const calonBaru = Math.max(0, parseInt(document.getElementById('etr-mod-calon').value) || 0);
+  if (!calonBaru) { tunjukToast('⚠️ Set Calon Semasa dahulu.','warn'); return; }
+
+  // Ambil dari semasa kalau ada, kalau tak guna asal
+  const sumber = {
+    aplus: s.bil_aplus_semasa||s.bil_aplus||0, a: s.bil_a_semasa||s.bil_a||0, aminus: s.bil_aminus_semasa||s.bil_aminus||0,
+    bplus: s.bil_bplus_semasa||s.bil_bplus||0, b: s.bil_b_semasa||s.bil_b||0,
+    cplus: s.bil_cplus_semasa||s.bil_cplus||0, c: s.bil_c_semasa||s.bil_c||0,
+    d: s.bil_d_semasa||s.bil_d||0, e: s.bil_e_semasa||s.bil_e||0, g: s.bil_g_semasa||s.bil_g||0
+  };
+  const sumSrc = sumber.aplus+sumber.a+sumber.aminus+sumber.bplus+sumber.b+sumber.cplus+sumber.c+sumber.d+sumber.e+sumber.g;
+  if (!sumSrc) { tunjukToast('⚠️ Bil gred asal kosong.','warn'); return; }
+
+  // Largest remainder algorithm
+  const keys = ['aplus','a','aminus','bplus','b','cplus','c','d','e','g'];
+  const exact = {};
+  const floor = {};
+  let totalFloor = 0;
+  keys.forEach(k => {
+    exact[k] = (sumber[k] / sumSrc) * calonBaru;
+    floor[k] = Math.floor(exact[k]);
+    totalFloor += floor[k];
+  });
+  let remainder = calonBaru - totalFloor;
+  // Susun ikut decimal terbesar
+  const sorted = keys.slice().sort((a,b) => (exact[b]-floor[b]) - (exact[a]-floor[a]));
+  for (let i = 0; i < remainder && i < sorted.length; i++) floor[sorted[i]]++;
+
+  document.getElementById('etr-mod-aplus').value = floor.aplus;
+  document.getElementById('etr-mod-a').value = floor.a;
+  document.getElementById('etr-mod-aminus').value = floor.aminus;
+  document.getElementById('etr-mod-bplus').value = floor.bplus;
+  document.getElementById('etr-mod-b').value = floor.b;
+  document.getElementById('etr-mod-cplus').value = floor.cplus;
+  document.getElementById('etr-mod-c').value = floor.c;
+  document.getElementById('etr-mod-d').value = floor.d;
+  document.getElementById('etr-mod-e').value = floor.e;
+  document.getElementById('etr-mod-g').value = floor.g;
+  kiraGPModal();
+  tunjukToast('✅ Auto isi berdasarkan nisbah asal.','success');
+}
+
+async function simpanETRModal() {
+  const s = _etrModSekolah;
+  if (!s) return;
+  const x = ambilGredModal();
+  const sum = x.aplus+x.a+x.aminus+x.bplus+x.b+x.cplus+x.c+x.d+x.e+x.g;
+  const tot = x.aplus*0+x.a*1+x.aminus*2+x.bplus*3+x.b*4+x.cplus*5+x.c*6+x.d*7+x.e*8+x.g*9;
+  const gp = x.calon ? Math.round((tot/x.calon)*100)/100 : 0;
+
+  const upd = {
+    jum_calon_semasa: x.calon,
+    bil_aplus_semasa: x.aplus, bil_a_semasa: x.a, bil_aminus_semasa: x.aminus,
+    bil_bplus_semasa: x.bplus, bil_b_semasa: x.b,
+    bil_cplus_semasa: x.cplus, bil_c_semasa: x.c,
+    bil_d_semasa: x.d, bil_e_semasa: x.e, bil_g_semasa: x.g,
+    etr_gp_semasa: gp,
+    tarikh_kemaskini: new Date().toISOString()
+  };
+
+  const { error } = await db.from('etr_sasaran').update(upd).eq('tahun','2026').eq('kod_sekolah', s.kod_sekolah);
+  if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  Object.assign(s, upd);
+  tutupModal();
+  tunjukToast('✅ '+s.nama_sekolah+' disimpan.','success');
+  renderJadualETR();
+  kiraRingkasanETR();
+}
+
+// ── HANTAR SEMUA
+function bukaModalHantarSemua() {
+  const drf = _etrData.filter(s => (s.status_hantar||'DRAF') === 'DRAF');
+  const adaSemasa = drf.filter(s => s.jum_calon_semasa > 0 || sumGred(s,'_semasa') > 0);
+  document.getElementById('etr-hantar-info').innerHTML = 
+    '<div style="font-size:14px;margin-bottom:8px">Sekolah dalam status DRAF: <strong>'+drf.length+'</strong></div>'+
+    '<div style="color:var(--sub)">Yang sudah ada data semasa: <strong>'+adaSemasa.length+'</strong></div>'+
+    (drf.length-adaSemasa.length > 0 ? '<div style="color:var(--amber);margin-top:6px">⚠️ '+(drf.length-adaSemasa.length)+' sekolah belum diset bil gred semasa — akan dihantar guna data asal sheet.</div>' : '');
+  bukaModal('modal-etr-hantar');
+}
+
+async function doHantarSemua() {
+  const drf = _etrData.filter(s => (s.status_hantar||'DRAF') === 'DRAF');
+  if (!drf.length) { tunjukToast('⚠️ Tiada sekolah dalam status DRAF.','warn'); tutupModal(); return; }
+  
+  const tarikh = new Date().toISOString();
+  const upd = drf.map(s => ({
+    tahun: '2026', kod_sekolah: s.kod_sekolah,
+    status_hantar: 'DIHANTAR', tarikh_hantar: tarikh
+  }));
+  
+  const { error } = await db.from('etr_sasaran').upsert(upd, { onConflict: 'tahun,kod_sekolah' });
+  if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+  
+  drf.forEach(s => { s.status_hantar = 'DIHANTAR'; s.tarikh_hantar = tarikh; });
+  tutupModal();
+  tunjukToast('✅ '+drf.length+' sekolah dihantar.','success');
+  renderJadualETR();
+}
+
+async function undoHantar(kod) {
+  bukaKonfirm('↩ Tarik Balik Hantar','Tarik balik sasaran untuk sekolah ini? Status akan kembali ke DRAF.','Sekolah tidak akan nampak sasaran lagi.','Ya, Tarik Balik','danger',async()=>{
+    const { error } = await db.from('etr_sasaran')
+      .update({ status_hantar:'DRAF', tarikh_hantar:null })
+      .eq('tahun','2026').eq('kod_sekolah', kod);
+    if (error) { tunjukToast('❌ '+error.message,'error'); return; }
+    const s = _etrData.find(x => x.kod_sekolah === kod);
+    if (s) { s.status_hantar = 'DRAF'; s.tarikh_hantar = null; }
+    tunjukToast('✅ Tarik balik berjaya.','success');
+    renderJadualETR();
+  });
+}
+
+// ── NAV DROPDOWN HOVER
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-dropdown').forEach(function(dd) {
+    var closeTimer;
+    dd.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      var menu = dd.querySelector('.nav-drop-menu');
+      var rect = dd.getBoundingClientRect();
+      menu.style.cssText = 'display:block !important;position:fixed !important;top:'+(rect.bottom)+'px !important;left:'+rect.left+'px !important;z-index:99999 !important;background:white !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 8px 24px rgba(0,0,0,.15) !important;min-width:190px !important;padding:6px 0 !important';
+    });
+    dd.addEventListener('mouseleave', function(e) {
+      var menu = dd.querySelector('.nav-drop-menu');
+      closeTimer = setTimeout(function() {
+        menu.style.cssText = 'display:none !important';
+      }, 150);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+    });
+    dd.querySelector('.nav-drop-menu').addEventListener('mouseleave', function() {
+      closeTimer = setTimeout(function() {
+        dd.querySelector('.nav-drop-menu').style.cssText = 'display:none !important';
+      }, 100);
+    });
+  });
+});
+
+// ── SUB TAB JPN
+function setJPNSubTab(nama) {
+  document.getElementById('jpn-sub-item').style.display = nama === 'item' ? '' : 'none';
+  document.getElementById('jpn-sub-prestasi').style.display = nama === 'prestasi' ? '' : 'none';
+  document.getElementById('jpn-stab-item').classList.toggle('active', nama === 'item');
+  document.getElementById('jpn-stab-prestasi').classList.toggle('active', nama === 'prestasi');
+  if (nama === 'prestasi') {
+    // Redirect ke page Sejarah Prestasi (nav tab atas)
+    const btnPrestasi = document.querySelector('[onclick*="prestasi-spm-jpn"]');
+    if (btnPrestasi) btnPrestasi.click();
+  }
+}
+
+// ── DROPDOWN CHECKLIST
+function toggleDropdownCheck(id) {
+  const el = document.getElementById(id);
+  const buka = el.style.display === 'none' || el.style.display === '';
+  // Tutup semua
+  document.querySelectorAll('.dropdown-check-list').forEach(d => { d.style.display = 'none'; });
+  if (!buka) return;
+  const btn = document.querySelector(`[onclick*="${id}"]`);
+  const rect = btn.getBoundingClientRect();
+  // Pastikan sentiasa dalam body (bukan dalam card overflow:hidden)
+  if (el.parentNode !== document.body) document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.left = rect.left + 'px';
+  el.style.width = Math.max(rect.width, 240) + 'px';
+  el.style.zIndex = '999999';
+  const ddH = 240;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  el.style.top = (spaceBelow >= ddH || rect.top < ddH)
+    ? (rect.bottom + 4) + 'px'
+    : (rect.top - ddH - 4) + 'px';
+  el.style.display = 'block';
+  // Force ke hadapan — override semua stacking context
+  el.style.transform = 'translateZ(0)';
+  el.style.willChange = 'transform';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-check') && !e.target.closest('.dropdown-check-list')) {
+    document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+  }
+});
+window.addEventListener('scroll', (e) => {
+  // Abaikan (jangan tutup) jika pengguna sedang scroll di dalam kotak dropdown itu sendiri
+  if (e.target && e.target.closest && e.target.closest('.dropdown-check-list')) return; 
+  document.querySelectorAll('.dropdown-check-list').forEach(d => d.style.display = 'none');
+}, true);
+
+function getCheckedPentaksiran() {
+  return [...document.querySelectorAll('#spm-jpn-ddc input:checked')].map(c => c.value);
+}
+
+function kemaskiniLabelDdc() {
+  const checked = getCheckedPentaksiran();
+  const el = document.getElementById('spm-jpn-ddc-label');
+  if (!el) return;
+  el.textContent = checked.length === 0 ? 'Semua Pentaksiran'
+    : checked.length === 1 ? checked[0]
+    : `${checked.length} dipilih`;
+}
+
+// ── CHART instances
+var _chartPPD = null, _chartSekolah = null;
+
+// ── DATA
+var _rawSpmJPN = [], _filteredSpmJPN = [];
+
+async function muatPrestasiJPN(forceRefresh = false) {
+  if (forceRefresh) localStorage.removeItem('simp_spm_cache');
+  const semua = await muatDataSPM();
+  _rawSpmJPN = semua.filter(r => r['mata pelajaran'] === 'PERNIAGAAN');
+
+  // Populate dropdown PPD
+  const ppdSet = [...new Set(_rawSpmJPN.map(r => r['ppd']).filter(Boolean))].sort();
+  const elPPD = document.getElementById('spm-jpn-ppd');
+  if (elPPD) elPPD.innerHTML = '<option value="">Semua PPD</option>' +
+    ppdSet.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  // Populate checklist pentaksiran
+  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+  const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+  const jpRaw = [...new Set(_rawSpmJPN.map(r => r['jenis pentaksiran']).filter(Boolean))];
+  const jpSet = jpRaw.sort((a,b) => {
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const elDDC = document.getElementById('spm-jpn-ddc');
+  if (elDDC) elDDC.innerHTML = jpSet.map(j => `
+    <label class="ddc-item">
+      <input type="checkbox" value="${j}" onchange="kemaskiniLabelDdc()"> ${j}
+    </label>`).join('');
+
+  // Reset sekolah chart 2
+  spmJpnMuatSekolah();
+}
+
+function spmJpnMuatSekolah() {
+  const ppd = (document.getElementById('spm-jpn-ppd') || {}).value || '';
+  const sekolahSet = [...new Set(
+    _rawSpmJPN.filter(r => !ppd || r['ppd'] === ppd).map(r => r['nama sekolah']).filter(Boolean)
+  )].sort();
+  const el = document.getElementById('spm-jpn-sekolah');
+  if (el) el.innerHTML = '<option value="">Semua Sekolah</option>' +
+    sekolahSet.map(s => `<option value="${s}">${s}</option>`).join('');
+  const elC2 = document.getElementById('spm-c2-sekolah');
+  if (elC2) elC2.innerHTML = '<option value="">— Pilih Sekolah —</option>' +
+    sekolahSet.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function resetTapisanSpmJpn() {
+  document.getElementById('spm-jpn-ppd').value = '';
+  document.getElementById('spm-jpn-sekolah').value = '';
+  document.querySelectorAll('#spm-jpn-ddc input').forEach(c => c.checked = false);
+  kemaskiniLabelDdc();
+  spmJpnMuatSekolah();
+  // Reset paparan
+  document.getElementById('spm-jpn-kad').style.display = 'none';
+  document.getElementById('spm-jpn-chart1-wrap').style.display = 'none';
+  document.getElementById('spm-jpn-chart2-wrap').style.display = 'none';
+  document.getElementById('jpn-spm-result').innerHTML = 'Klik "Jana Prestasi Sekolah" untuk papar senarai.';
+}
+
+function tapis_spm_jpn() {
+  const ppd = (document.getElementById('spm-jpn-ppd') || {}).value || '';
+  const skl = (document.getElementById('spm-jpn-sekolah') || {}).value || '';
+  const jpList = getCheckedPentaksiran();
+
+  _filteredSpmJPN = _rawSpmJPN.filter(r => {
+    if (ppd && r['ppd'] !== ppd) return false;
+    if (skl && r['nama sekolah'] !== skl) return false;
+    if (jpList.length && !jpList.includes(r['jenis pentaksiran'])) return false;
+    return true;
+  });
+
+  if (!_filteredSpmJPN.length) {
+    document.getElementById('spm-jpn-kad').style.display = 'none';
+    document.getElementById('spm-jpn-chart1-wrap').style.display = 'none';
+    document.getElementById('spm-jpn-chart2-wrap').style.display = 'none';
+    document.getElementById('jpn-spm-result').innerHTML = '<div class="empty-state" style="padding:40px"><div class="ico">🏆</div><p>Tiada rekod ditemui.</p></div>';
+    return;
+  }
+
+  // Kad ringkasan
+  renderKadSpmJpn(_filteredSpmJPN);
+
+  // Chart 1
+  renderChart1();
+
+  // Chart 2
+  document.getElementById('spm-jpn-chart2-wrap').style.display = '';
+  renderChart2();
+
+  // Reset jadual
+  document.getElementById('jpn-spm-result').innerHTML = 'Klik "Jana Prestasi Sekolah" untuk papar senarai.';
+}
+
+function renderKadSpmJpn(data) {
+  const el = document.getElementById('spm-jpn-kad');
+  if (!el) return;
+  const jmlDuduki = data.reduce((s, r) => s + r['bil duduki'], 0);
+  const wA = data.reduce((s, r) => s + (r['%a'] * r['bil duduki']), 0);
+  const wK = data.reduce((s, r) => s + (r['% kredit'] * r['bil duduki']), 0);
+  const wL = data.reduce((s, r) => s + (r['%lulus'] * r['bil duduki']), 0);
+  const wG = data.reduce((s, r) => s + (r['gpmp'] * r['bil duduki']), 0);
+  const pA = jmlDuduki ? (wA / jmlDuduki).toFixed(2) : '—';
+  const pK = jmlDuduki ? (wK / jmlDuduki).toFixed(2) : '—';
+  const pL = jmlDuduki ? (wL / jmlDuduki).toFixed(2) : '—';
+  const gp = jmlDuduki ? (wG / jmlDuduki).toFixed(2) : '—';
+
+  document.getElementById('k-duduki').textContent = jmlDuduki;
+  document.getElementById('k-a').textContent = pA + '%';
+  document.getElementById('k-kredit').textContent = pK + '%';
+  document.getElementById('k-lulus').textContent = pL + '%';
+  document.getElementById('k-gpmp').textContent = gp;
+  el.style.display = '';
+}
+
+// ── WARNA PER PENTAKSIRAN
+const WARNA_JP = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+function warnaJP(list) {
+  return list.map((_, i) => WARNA_JP[i % WARNA_JP.length]);
+}
+
+function renderChart1() {
+  const wrap = document.getElementById('spm-jpn-chart1-wrap');
+  const metrik = (document.getElementById('spm-c1-metrik') || {}).value || 'gpmp';
+  if (!_filteredSpmJPN.length) { wrap.style.display = 'none'; return; }
+
+  const jpList = [...new Set(_filteredSpmJPN.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const ppdList = [...new Set(_filteredSpmJPN.map(r => r['ppd']))].sort();
+
+  const datasets = jpList.map((jp, i) => {
+    const data = ppdList.map(ppd => {
+      const rekod = _filteredSpmJPN.filter(r => r['ppd'] === ppd && r['jenis pentaksiran'] === jp);
+      if (!rekod.length) return null;
+      const jmlD = rekod.reduce((s, r) => s + r['bil duduki'], 0);
+      if (metrik === 'gpmp') return jmlD ? +(rekod.reduce((s, r) => s + r['gpmp'] * r['bil duduki'], 0) / jmlD).toFixed(2) : null;
+      return jmlD ? +(rekod.reduce((s, r) => s + r[metrik] * r['bil duduki'], 0) / jmlD).toFixed(2) : null;
+    });
+    return { label: jp, data, backgroundColor: WARNA_JP[i % WARNA_JP.length] + 'cc', borderColor: WARNA_JP[i % WARNA_JP.length], borderWidth: 1 };
+  });
+
+  wrap.style.display = '';
+  if (_chartPPD) _chartPPD.destroy();
+  _chartPPD = new Chart(document.getElementById('chart-ppd'), {
+    type: 'bar',
+    data: { labels: ppdList.map(p => p.replace('PPD ','')), datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          font: { size: 10, weight: '700' },
+          color: '#374151',
+          formatter: (v) => v !== null ? v : ''
+        }
+      },
+      scales: {
+        y: { beginAtZero: true,
+          min: 0,
+          max: metrik === 'gpmp' ? 9 : undefined,
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'PPD' } }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function renderChart2() {
+  const skl = (document.getElementById('spm-c2-sekolah') || {}).value || '';
+  const metrik = (document.getElementById('spm-c2-metrik') || {}).value || 'gpmp';
+  const wrap = document.getElementById('spm-jpn-chart2-wrap');
+  if (!skl) { if (_chartSekolah) { _chartSekolah.destroy(); _chartSekolah = null; } return; }
+
+  const rekodSkl = _filteredSpmJPN.filter(r => r['nama sekolah'] === skl);
+  const jpList = [...new Set(rekodSkl.map(r => r['jenis pentaksiran']))].sort((a,b) => {
+    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
+    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
+    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
+    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
+    if (tahunA !== tahunB) return tahunA - tahunB;
+    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
+    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
+    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+    return a.localeCompare(b);
+  });
+  const nilaiList = jpList.map(jp => {
+    const r = rekodSkl.find(x => x['jenis pentaksiran'] === jp);
+    return r ? +r[metrik] : 0;
+  });
+
+  if (_chartSekolah) _chartSekolah.destroy();
+  _chartSekolah = new Chart(document.getElementById('chart-sekolah'), {
+    type: 'bar',
+    data: {
+      labels: jpList,
+      datasets: [{ label: skl, data: nilaiList, backgroundColor: warnaJP(jpList), borderWidth: 1 }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'top',
+          font: { size: 11, weight: '700' },
+          color: '#374151',
+          formatter: (v) => v !== null ? v : ''
+        }
+      },
+      scales: {
+        y: { beginAtZero: true,
+          min: 0,
+          max: metrik === 'gpmp' ? 10 : undefined,
+          grace: '10%',
+          title: { display: true, text: metrik.toUpperCase() } },
+        x: { title: { display: true, text: 'Jenis Pentaksiran' } }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function janaJadualSpmJpn() {
+  const el = document.getElementById('jpn-spm-result');
+  if (!_filteredSpmJPN.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><p>Tiada data. Klik Papar dulu.</p></div>';
+    return;
+  }
+  el.innerHTML = '<div id="spm-table-jpn"></div>';
+  renderJadualSPM(_filteredSpmJPN, 'spm-table-jpn');
 }
 
 </script>
