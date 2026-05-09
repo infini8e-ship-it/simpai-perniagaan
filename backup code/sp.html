@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIMP-Ai: PERNIAGAAN — Tetapan SP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="sp.html">
+    <div class="nav-logo">S</div>
+    <div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div>
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active">⚙️ Tetapan SP</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge nb-jpn" id="nav-nama">—</div>
+    <div class="nav-avatar" id="nav-avatar">—</div>
+    <button class="btn-logout" onclick="doLogout()">Keluar</button>
+  </div>
+</nav>
+
+<main>
+  <div class="sec-hd">
+    <div><div class="sec-title">Tetapan SP ⚙️</div><div class="sec-sub">Standard Pembelajaran, Skema K1 & Tetapan K2</div></div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap">
+    <button class="btn-ghost sp-subtab active" onclick="spTab(this,'skpsp')" style="background:var(--indigo-l);color:var(--indigo);border-color:var(--indigo-m)">📚 Senarai SKPSP</button>
+    <button class="btn-ghost sp-subtab" onclick="spTab(this,'tetapan-k1')">📋 Tetapan K1</button>
+    <button class="btn-ghost sp-subtab" onclick="spTab(this,'tetapan-k2')">📝 Tetapan K2</button>
+  </div>
+
+  <!-- SKPSP -->
+  <div class="sp-subcontent" id="sc-skpsp">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📚 Standard Pembelajaran (SKPSP) <span class="chip" id="skpsp-count">—</span></div>
+        <div style="display:flex;gap:8px">
+          <select class="form-select" id="skpsp-filter-ting" style="width:130px;padding:6px 10px;font-size:12px" onchange="muatSKPSP()">
+            <option value="">Semua</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option>
+          </select>
+          <button class="btn-primary" onclick="bukaModal('modal-tambah-skpsp')">+ Tambah SP</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0" id="skpsp-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Tetapan K1 -->
+  <div class="sp-subcontent" id="sc-tetapan-k1" style="display:none">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📋 Tetapan Kertas 1 (SP & Skema) <span class="chip" id="k1-count">—</span></div>
+        <button class="btn-primary" onclick="bukaModal('modal-tambah-k1')">+ Tambah Tetapan K1</button>
+      </div>
+      <div class="card-body" style="padding:0" id="tetapan-k1-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Tetapan K2 -->
+  <div class="sp-subcontent" id="sc-tetapan-k2" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-body">
+        <div class="form-grid form-grid-3" style="margin-bottom:0">
+          <div class="form-group"><label class="form-label">Tingkatan</label>
+            <select class="form-select" id="k2g-ting"><option value="4">T4</option><option value="5">T5</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Jenis Pentaksiran</label>
+            <select class="form-select" id="k2g-jenis">
+              <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+              <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+              <option value="PERCUBAAN SPM">PSPM</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Tahun</label>
+            <select class="form-select" id="k2g-tahun"><option value="2026">2026</option></select>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn-primary" onclick="muatGridK2()">📋 Muat Grid</button>
+          <button class="btn-ghost" id="btn-k2g-simpan" onclick="simpanGridK2()" style="display:none">💾 Simpan Semua</button>
+        </div>
+      </div>
+    </div>
+    <div id="k2-grid-wrap"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-head">
+        <div class="card-title">📋 Tetapan K2 Disimpan <span class="chip chip-cy" id="k2-count" style="font-family:var(--ffm)">0 soalan</span></div>
+        <button class="btn-ghost" style="font-size:12px" onclick="muatTetapanK2()">🔄 Muat Semula</button>
+      </div>
+      <div class="card-body" style="padding:12px 16px" id="tetapan-k2-body">
+        <div class="empty-state" style="padding:20px"><p>Tiada tetapan K2 lagi.</p></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal Tambah K1 -->
+<div class="modal-overlay" id="modal-tambah-k1">
+  <div class="modal-box modal-box-lg">
+    <div class="modal-head"><div class="modal-title">📋 Tambah / Kemaskini Tetapan K1</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-3" style="margin-bottom:16px">
+        <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="k1-ting" onchange="janaGridK1()"><option value="4">T4</option><option value="5">T5</option></select></div>
+        <div class="form-group"><label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="k1-jenis">
+            <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+            <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+            <option value="PERCUBAAN SPM">PSPM</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="k1-tahun"><option value="2026">2026</option><option value="2025">2025</option></select></div>
+      </div>
+      <div style="margin-bottom:14px;background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Pilih Mod Input:</div>
+        <div style="display:flex;gap:20px">
+          <label style="font-size:13px;cursor:pointer;font-weight:600"><input type="radio" name="k1_mode" value="teks" checked onchange="tukarModK1()"> 📝 Teks Keseluruhan (Tampal)</label>
+          <label style="font-size:13px;cursor:pointer;font-weight:600"><input type="radio" name="k1_mode" value="grid" onchange="tukarModK1()"> 🔢 Satu Per Satu</label>
+        </div>
+      </div>
+      <div id="k1-mod-teks">
+        <div class="alert alert-info" style="margin-bottom:14px">ℹ️ Masukkan 40 SP dan 40 Skema Jawapan (A/B/C/D) — dipisah koma.</div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">SP per Soalan (40 nilai, pisah koma)</label>
+          <textarea class="form-input" id="k1-sp" rows="4" placeholder="Boleh newline atau koma:&#10;1.1.1&#10;1.1.2&#10;..." style="font-family:var(--ffm);font-size:12px;resize:vertical"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Skema Jawapan K1 (40 nilai A/B/C/D, pisah koma)</label>
+          <textarea class="form-input" id="k1-skema" rows="4" placeholder="Boleh newline atau koma:&#10;A&#10;B&#10;..." style="font-family:var(--ffm);font-size:12px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div id="k1-mod-grid" style="display:none;max-height:400px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px">
+        <table class="data-table" style="width:100%;margin:0">
+          <thead style="position:sticky;top:0;background:var(--white);z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+            <tr><th style="width:50px;text-align:center">No.</th><th>Pilih 1 Kod SP</th><th style="width:120px">Skema (A/B/C/D)</th></tr>
+          </thead>
+          <tbody id="k1-grid-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" onclick="simpanTetapanK1()">💾 Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal Tambah SKPSP -->
+<div class="modal-overlay" id="modal-tambah-skpsp">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">📚 Tambah SP Baharu</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Kod SP</label><input class="form-input" id="skpsp-kod" placeholder="1.1.1" style="font-family:var(--ffm)"></div>
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="skpsp-ting"><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Kod SK</label><input class="form-input" id="skpsp-sk" placeholder="1.1" style="font-family:var(--ffm)"></div>
+        <div class="form-group form-full"><label class="form-label">Huraian SK (Tajuk Bab)</label><input class="form-input" id="skpsp-tajuk" placeholder="1.1 Tujuan Perniagaan..."></div>
+        <div class="form-group form-full"><label class="form-label">Huraian SP</label><textarea class="form-input" id="skpsp-huraian" rows="3" placeholder="Menerangkan tujuan perniagaan..." style="resize:vertical"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Batal</button><button class="btn-primary" onclick="simpanSKPSP()">💾 Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal Edit SKPSP -->
+<div class="modal-overlay" id="modal-edit-skpsp">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">✏️ Edit Standard Pembelajaran</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-skpsp-id">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Kod SP</label><input class="form-input" id="edit-skpsp-kod" style="font-family:var(--ffm)"></div>
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="edit-skpsp-ting"><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Kod SK</label><input class="form-input" id="edit-skpsp-sk" placeholder="1.1" style="font-family:var(--ffm)"></div>
+        <div class="form-group form-full"><label class="form-label">Huraian SK (Tajuk Bab)</label><input class="form-input" id="edit-skpsp-tajuk"></div>
+        <div class="form-group form-full"><label class="form-label">Huraian SP</label><textarea class="form-input" id="edit-skpsp-huraian" rows="3" style="resize:vertical"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger" onclick="padamSKPSP()">🗑 Padam</button>
+      <button class="btn-ghost" onclick="tutupModal()">Batal</button>
+      <button class="btn-primary" onclick="kemasSKPSP()">💾 Kemaskini</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+<script>
+var _skpspSemua = [];
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
+
+window.addEventListener('load', async () => {
+  const ok = await semakSession('ADMIN_SP');
+  if (!ok) return;
+  pasangNav();
+  muatSKPSP();
+});
+
+function pasangNav() {
+  const inisial = STATE.nama.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('nav-avatar').textContent = inisial;
+  document.getElementById('nav-nama').textContent = STATE.nama;
+}
+
+function bukaModal(id) { document.getElementById(id).classList.add('show'); }
+function tutupModal() { document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('show')); }
+document.querySelectorAll && window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
+});
+
+function tunjukToast(msg, jenis='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = jenis==='success'?'var(--emerald)':jenis==='error'?'var(--rose)':jenis==='warn'?'var(--amber)':'var(--text)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+function kodJenis(j) {
+  const map = {
+    'PENTAKSIRAN PERTENGAHAN SESI AKADEMIK':'PPSA',
+    'PENTAKSIRAN AKHIR SESI AKADEMIK':'PASA',
+    'PERCUBAAN SPM':'PSPM'
+  };
+  return map[j]||j||'—';
+}
+
+function spTab(btn, id) {
+  document.querySelectorAll('.sp-subtab').forEach(b=>{
+    b.classList.remove('active');
+    b.style.background=''; b.style.color=''; b.style.borderColor='';
+  });
+  document.querySelectorAll('.sp-subcontent').forEach(c=>c.style.display='none');
+  btn.classList.add('active');
+  btn.style.background='var(--indigo-l)'; btn.style.color='var(--indigo)'; btn.style.borderColor='var(--indigo-m)';
+  document.getElementById('sc-'+id).style.display='block';
+  if(id==='skpsp') muatSKPSP();
+  else if(id==='tetapan-k1') muatTetapanK1();
+  else if(id==='tetapan-k2') muatTetapanK2();
+}
+
+async function muatSKPSP() {
+  const ting = document.getElementById('skpsp-filter-ting').value;
+  let q = db.from('skpsp').select('id,tingkatan,sk_kod,tajuk,sp_kod,huraian').order('tingkatan').order('sp_kod');
+  if (ting) q = q.eq('tingkatan', ting);
+  const { data, error } = await q;
+  if (error) return tunjukToast('Gagal muat SKPSP', 'error');
+  _skpspSemua = data || [];
+  document.getElementById('skpsp-count').textContent = _skpspSemua.length + ' rekod';
+  const html = _skpspSemua.map(s=>`
+    <tr>
+      <td style="text-align:center"><span class="chip">${s.tingkatan}</span></td>
+      <td style="font-family:var(--ffm);font-weight:700;color:var(--cyan);white-space:nowrap">${s.sk_kod||'—'}</td>
+      <td style="font-size:12px;color:var(--sub);max-width:180px">${s.tajuk||'—'}</td>
+      <td style="font-family:var(--ffm);font-weight:700;color:var(--indigo);white-space:nowrap">${s.sp_kod}</td>
+      <td style="font-size:12px;max-width:300px">${s.huraian||'—'}</td>
+      <td style="text-align:right"><button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editSKPSP('${s.id}')">✏️</button></td>
+    </tr>`).join('');
+  document.getElementById('skpsp-body').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>T</th><th>SK</th><th>Huraian SK</th><th>SP</th><th>Huraian SP</th><th></th></tr></thead>
+      <tbody>${html}</tbody>
+    </table>`;
+}
+
+async function simpanSKPSP(){
+  const payload={ sp_kod:document.getElementById('skpsp-kod').value.trim(), tingkatan:document.getElementById('skpsp-ting').value, sk_kod:document.getElementById('skpsp-sk').value.trim(), tajuk:document.getElementById('skpsp-tajuk').value.trim(), huraian:document.getElementById('skpsp-huraian').value.trim() };
+  if(!payload.sp_kod||!payload.huraian){tunjukToast('⚠️ Sila isi Kod SP dan Huraian.','warn');return;}
+  const{error}=await db.from('skpsp').insert(payload);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ SP ditambah.','success');muatSKPSP();
+}
+
+function editSKPSP(id) {
+  const s = _skpspSemua.find(item=>item.id===id);
+  if (!s) return;
+  document.getElementById('edit-skpsp-id').value=s.id;
+  document.getElementById('edit-skpsp-kod').value=s.sp_kod;
+  document.getElementById('edit-skpsp-ting').value=s.tingkatan;
+  document.getElementById('edit-skpsp-sk').value=s.sk_kod||'';
+  document.getElementById('edit-skpsp-tajuk').value=s.tajuk||'';
+  document.getElementById('edit-skpsp-huraian').value=s.huraian||'';
+  bukaModal('modal-edit-skpsp');
+}
+
+async function kemasSKPSP(){
+  const id=document.getElementById('edit-skpsp-id').value;
+  const payload={ sp_kod:document.getElementById('edit-skpsp-kod').value.trim(), tingkatan:document.getElementById('edit-skpsp-ting').value, sk_kod:document.getElementById('edit-skpsp-sk').value.trim(), tajuk:document.getElementById('edit-skpsp-tajuk').value.trim(), huraian:document.getElementById('edit-skpsp-huraian').value.trim() };
+  const{error}=await db.from('skpsp').update(payload).eq('id',id);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ SP dikemaskini.','success');muatSKPSP();
+}
+
+async function padamSKPSP(){
+  const id=document.getElementById('edit-skpsp-id').value;
+  const kod=document.getElementById('edit-skpsp-kod').value;
+  if(!confirm('Padam SP '+kod+'?')) return;
+  const{error}=await db.from('skpsp').delete().eq('id',id);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ SP dipadam.','success');muatSKPSP();
+}
+
+async function muatTetapanK1(){
+  const{data}=await db.from('tetapan_k1').select('*').order('tahun',{ascending:false}).order('tingkatan').order('jenis_pentaksiran');
+  const list=data||[];
+  document.getElementById('k1-count').textContent=list.length+' rekod';
+  if(!list.length){ document.getElementById('tetapan-k1-body').innerHTML='<div class="empty-state" style="padding:30px"><p>Tiada tetapan K1. Klik + Tambah.</p></div>'; return; }
+  document.getElementById('tetapan-k1-body').innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>Tingkatan</th><th>Jenis</th><th>Tahun</th><th>SP (40 soalan)</th><th>Skema</th><th>Status</th><th></th></tr></thead>
+      <tbody>${list.map(t=>{
+        let spArr=[],skArr=[];
+        try{spArr=JSON.parse(t.sp_json||'[]');}catch(e){}
+        try{skArr=JSON.parse(t.skema_json||'[]');}catch(e){}
+        return`<tr>
+          <td>T${t.tingkatan}</td>
+          <td style="font-size:12px">${kodJenis(t.jenis_pentaksiran)}</td>
+          <td style="font-family:var(--ffm)">${t.tahun}</td>
+          <td style="font-size:11px;color:var(--sub);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${spArr.slice(0,5).join(', ')}${spArr.length>5?'...':''} <span class="chip">${spArr.length} SP</span></td>
+          <td style="font-size:11px;color:var(--sub)">${skArr.slice(0,5).join(',')}${skArr.length>5?'...':''}</td>
+          <td><span class="sp ${spArr.length===40?'sp-ok':'sp-warn'}">${spArr.length===40?'✓ Lengkap':'⚠️ '+spArr.length+'/40'}</span></td>
+          <td><button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editK1(${t.id})">✏️ Edit</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+function tukarModK1(){
+  const mod=document.querySelector('input[name="k1_mode"]:checked').value;
+  document.getElementById('k1-mod-teks').style.display=mod==='teks'?'block':'none';
+  document.getElementById('k1-mod-grid').style.display=mod==='grid'?'block':'none';
+  if(mod==='grid') janaGridK1();
+}
+
+function janaGridK1(){
+  const spList=_skpspSemua;
+  let spOpts='<option value="">-- Pilih SP --</option>';
+  spList.forEach(s=>{
+    let label=(s.huraian||'').substring(0,50);
+    spOpts+=`<option value="${s.sp_kod}">[T${s.tingkatan}] ${s.sp_kod} (SK:${s.sk_kod}) - ${label}...</option>`;
+  });
+  let skemaOpts='<option value="">-</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>';
+  let rows='';
+  for(let i=1;i<=40;i++){
+    rows+=`<tr>
+      <td style="text-align:center;font-family:var(--ffm);font-weight:700">${i}</td>
+      <td><select class="form-select k1g-sp" data-no="${i}" style="font-size:12px;padding:6px 8px">${spOpts}</select></td>
+      <td><select class="form-select k1g-sk" data-no="${i}" style="font-size:12px;padding:6px 8px">${skemaOpts}</select></td>
+    </tr>`;
+  }
+  document.getElementById('k1-grid-body').innerHTML=rows;
+}
+
+async function simpanTetapanK1(){
+  const modInput=document.querySelector('input[name="k1_mode"]:checked');
+  let spArr=[],skArr=[];
+  if(modInput&&modInput.value==='grid'){
+    document.querySelectorAll('.k1g-sp').forEach(s=>spArr.push(s.value||''));
+    document.querySelectorAll('.k1g-sk').forEach(s=>skArr.push(s.value||''));
+  } else {
+    const spRaw=document.getElementById('k1-sp').value.trim();
+    const skRaw=document.getElementById('k1-skema').value.trim();
+    spArr=spRaw.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
+    skArr=skRaw.split(/[\n,]/).map(s=>s.trim().toUpperCase()).filter(Boolean);
+  }
+  if(spArr.length!==40){tunjukToast('⚠️ SP mesti tepat 40 nilai. Sekarang: '+spArr.length,'warn');return;}
+  if(skArr.length!==40){tunjukToast('⚠️ Skema mesti tepat 40 nilai. Sekarang: '+skArr.length,'warn');return;}
+  const payload={ tingkatan:document.getElementById('k1-ting').value, jenis_pentaksiran:document.getElementById('k1-jenis').value, tahun:document.getElementById('k1-tahun').value, sp_json:JSON.stringify(spArr), skema_json:JSON.stringify(skArr) };
+  const{data:sedia}=await db.from('tetapan_k1').select('id').eq('tingkatan',payload.tingkatan).eq('jenis_pentaksiran',payload.jenis_pentaksiran).eq('tahun',payload.tahun).single();
+  let error;
+  if(sedia)({error}=await db.from('tetapan_k1').update(payload).eq('id',sedia.id));
+  else ({error}=await db.from('tetapan_k1').insert(payload));
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tutupModal();tunjukToast('✅ Tetapan K1 disimpan.','success');muatTetapanK1();
+}
+
+async function editK1(id){
+  const{data}=await db.from('tetapan_k1').select('*').eq('id',id).single();
+  if(!data) return;
+  let spArr=[],skArr=[];
+  try{spArr=JSON.parse(data.sp_json||'[]');}catch(e){}
+  try{skArr=JSON.parse(data.skema_json||'[]');}catch(e){}
+  document.getElementById('k1-ting').value=data.tingkatan;
+  document.getElementById('k1-jenis').value=data.jenis_pentaksiran;
+  document.getElementById('k1-tahun').value=data.tahun;
+  document.getElementById('k1-sp').value=spArr.join(',');
+  document.getElementById('k1-skema').value=skArr.join(',');
+  bukaModal('modal-tambah-k1');
+}
+
+var _k2GridStruktur=[{bhg:'A',soalan:6,markah:10},{bhg:'B',soalan:3,markah:15},{bhg:'C',soalan:1,markah:20}];
+
+async function muatGridK2(){
+  const ting=document.getElementById('k2g-ting').value;
+  const jenis=document.getElementById('k2g-jenis').value;
+  const tahun=document.getElementById('k2g-tahun').value;
+  const{data}=await db.from('tetapan_k2').select('*').eq('tingkatan',ting).eq('jenis_pentaksiran',jenis).eq('tahun',tahun).order('bahagian').order('soalan_no');
+  const sediaAda={};
+  (data||[]).forEach(t=>{sediaAda[t.bahagian+'_'+t.soalan_no]=t.sp_kod||'';});
+  const{data:spList}=await db.from('skpsp').select('sp_kod,huraian,tajuk').eq('tingkatan',ting).order('sp_kod');
+  const spOpts=(spList||[]).map(s=>`<option value="${s.sp_kod}">${s.sp_kod} — ${(s.huraian||'').substring(0,40)}</option>`).join('');
+  var html='';
+  var bhgLabel={A:'Bahagian A — Jawab 5/6 soalan × /10 markah',B:'Bahagian B — Jawab 2/3 soalan × /15 markah',C:'Bahagian C — Soalan Wajib × /20 markah'};
+  var bhgClr={A:'var(--indigo)',B:'var(--emerald)',C:'var(--amber)'};
+  _k2GridStruktur.forEach(function(s){
+    html+=`<div class="card" style="margin-bottom:12px"><div class="card-head" style="background:${bhgClr[s.bhg]}"><div class="card-title" style="color:#fff">📝 ${bhgLabel[s.bhg]}</div></div><div class="card-body" style="padding:0"><table class="data-table"><thead><tr><th style="width:80px">Soalan</th><th style="width:100px">Markah</th><th>SP</th><th style="width:200px">Pilih dari Senarai</th></tr></thead><tbody>`;
+    for(var i=1;i<=s.soalan;i++){
+      var key=s.bhg+'_'+i;
+      var spVal=sediaAda[key]||'';
+      html+=`<tr><td style="font-weight:700;font-family:var(--ffm);color:${bhgClr[s.bhg]}">${s.bhg}${i}</td><td style="font-family:var(--ffm)">/${s.markah}</td><td><input class="form-input k2g-sp-input" data-bhg="${s.bhg}" data-no="${i}" data-markah="${s.markah}" value="${spVal}" placeholder="Cth: 3.1.1,3.1.2" style="font-family:var(--ffm);font-size:12px;padding:7px 10px;min-width:200px;width:100%"></td><td><select class="form-select" style="font-size:11.5px;padding:6px 8px" onchange="pilihSpGrid(this,'${s.bhg}',${i})"><option value="">— Pilih SP —</option>${spOpts}</select></td></tr>`;
+    }
+    html+=`</tbody></table></div></div>`;
+  });
+  document.getElementById('k2-grid-wrap').innerHTML=
+    `<div class="card" style="margin-bottom:12px"><div class="card-head"><div class="card-title">⚡ Import Teks Pantas</div><button class="btn-ghost" style="font-size:12px" onclick="toggleImport()">▼ Buka / Tutup</button></div><div id="import-panel" style="display:none"><div class="card-body"><div class="alert alert-info" style="margin-bottom:12px">ℹ️ Format: A1: 1.1.1,1.1.2</div><textarea class="form-input" id="import-teks" rows="10" style="font-family:var(--ffm);font-size:13px;resize:vertical"></textarea><div style="margin-top:10px;display:flex;gap:8px"><button class="btn-primary" onclick="parseImportTeks()">⚡ Parse & Isi Grid</button></div><div id="import-result" style="margin-top:10px"></div></div></div></div>`+
+    html+
+    `<div style="padding:6px 0 20px;display:flex;gap:10px;justify-content:flex-end"><button class="btn-ghost" onclick="semakLengkapK2()" style="border-color:var(--amber-m);color:var(--amber)">🔍 Semak Lengkap</button><button class="btn-primary" onclick="simpanGridK2()">💾 Simpan Semua</button></div><div id="semak-result-k2" style="margin-bottom:16px"></div>`;
+  document.getElementById('btn-k2g-simpan').style.display='inline-flex';
+}
+
+function toggleImport(){ const p=document.getElementById('import-panel'); if(p) p.style.display=p.style.display==='none'?'block':'none'; }
+function pilihSpGrid(sel,bhg,no){ if(!sel.value) return; const inp=document.querySelector(`.k2g-sp-input[data-bhg="${bhg}"][data-no="${no}"]`); if(!inp) return; if(inp.value.trim()==='') inp.value=sel.value; else { const sedia=inp.value.split(',').map(s=>s.trim()).filter(Boolean); if(!sedia.includes(sel.value)) inp.value=sedia.concat(sel.value).join(','); } sel.value=''; }
+
+function parseImportTeks(){
+  const teks=document.getElementById('import-teks').value.trim();
+  if(!teks){tunjukToast('⚠️ Sila isi teks dahulu.','warn');return;}
+  const baris=teks.split('\n').map(b=>b.trim()).filter(Boolean);
+  var berjaya=0,gagal=[],tidakJumpa=[];
+  baris.forEach(function(b){
+    const match=b.match(/^([A-Ca-c])(\d+)\s*:\s*(.+)$/i);
+    if(!match){gagal.push(b);return;}
+    const bhg=match[1].toUpperCase(),no=parseInt(match[2]),sp=match[3].split(',').map(s=>s.trim()).filter(Boolean).join(',');
+    const inp=document.querySelector(`.k2g-sp-input[data-bhg="${bhg}"][data-no="${no}"]`);
+    if(!inp){tidakJumpa.push(bhg+no);return;}
+    inp.value=sp; inp.style.background='var(--emerald-l)'; inp.style.borderColor='var(--emerald-m)'; berjaya++;
+  });
+  var msg='<div class="alert '+(gagal.length||tidakJumpa.length?'alert-warn':'alert-success')+'">✅ '+berjaya+' soalan diisi.'+(gagal.length?'<br>⚠️ Format salah: '+gagal.join(', '):'')+(tidakJumpa.length?'<br>⚠️ Tidak dijumpai: '+tidakJumpa.join(', '):'')+'</div>';
+  document.getElementById('import-result').innerHTML=msg;
+}
+
+function semakLengkapK2(){
+  const inputs=document.querySelectorAll('.k2g-sp-input');
+  if(!inputs.length){tunjukToast('⚠️ Sila muat grid dahulu.','warn');return;}
+  var lengkap=[],kosong=[];
+  inputs.forEach(function(inp){ const label=inp.dataset.bhg+inp.dataset.no; if(inp.value.trim()) lengkap.push(label); else kosong.push(label); });
+  if(kosong.length===0) tunjukToast('✅ Semua soalan lengkap!','success');
+  else tunjukToast('⚠️ '+kosong.length+' soalan belum diisi.','warn');
+  inputs.forEach(function(inp){ if(!inp.value.trim()){inp.style.borderColor='var(--rose-m)';inp.style.background='var(--rose-l)';}else{inp.style.borderColor='';inp.style.background='';} });
+}
+
+async function simpanGridK2(){
+  const ting=document.getElementById('k2g-ting').value,jenis=document.getElementById('k2g-jenis').value,tahun=document.getElementById('k2g-tahun').value;
+  const inputs=document.querySelectorAll('.k2g-sp-input');
+  if(!inputs.length){tunjukToast('⚠️ Sila muat grid dahulu.','warn');return;}
+  const payload=[];
+  inputs.forEach(function(inp){ const sp=inp.value.trim(); if(!sp) return; payload.push({tingkatan:ting,jenis_pentaksiran:jenis,tahun:tahun,bahagian:inp.dataset.bhg,soalan_no:parseInt(inp.dataset.no),markah_penuh:parseInt(inp.dataset.markah),sp_kod:sp}); });
+  if(!payload.length){tunjukToast('⚠️ Tiada SP diisi.','warn');return;}
+  const{error:errPadam}=await db.from('tetapan_k2').delete().eq('tingkatan',ting).eq('jenis_pentaksiran',jenis).eq('tahun',tahun);
+  if(errPadam){tunjukToast('❌ '+errPadam.message,'error');return;}
+  const{error}=await db.from('tetapan_k2').insert(payload);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tunjukToast('✅ Tetapan K2 disimpan — '+payload.length+' soalan.','success');
+  document.getElementById('k2-grid-wrap').innerHTML='';
+  document.getElementById('btn-k2g-simpan').style.display='none';
+  await muatTetapanK2();
+}
+
+async function muatTetapanK2(){
+  const{data}=await db.from('tetapan_k2').select('*').order('tahun',{ascending:false}).order('tingkatan').order('jenis_pentaksiran').order('bahagian').order('soalan_no');
+  const list=data||[];
+  document.getElementById('k2-count').textContent=list.length+' soalan';
+  if(!list.length){ document.getElementById('tetapan-k2-body').innerHTML='<div class="empty-state" style="padding:30px"><p>Tiada tetapan K2.</p></div>'; return; }
+  const kumpulan={};
+  list.forEach(function(t){ const k=t.tingkatan+'|'+t.jenis_pentaksiran+'|'+t.tahun; if(!kumpulan[k]) kumpulan[k]={tingkatan:t.tingkatan,jenis:t.jenis_pentaksiran,tahun:t.tahun,soalan:[]}; kumpulan[k].soalan.push(t); });
+  var html='';
+  Object.values(kumpulan).forEach(function(g){
+    const bhgA=g.soalan.filter(s=>s.bahagian==='A'),bhgB=g.soalan.filter(s=>s.bahagian==='B'),bhgC=g.soalan.filter(s=>s.bahagian==='C');
+    const lengkap=g.soalan.filter(s=>s.sp_kod).length===g.soalan.length;
+    html+=`<div class="card" style="margin-bottom:12px"><div class="card-head"><div class="card-title"><span class="chip">T${g.tingkatan}</span><span style="margin:0 6px">${kodJenis(g.jenis)}</span><span class="chip chip-cy" style="font-family:var(--ffm)">${g.tahun}</span><span class="sp ${lengkap?'sp-ok':'sp-warn'}" style="margin-left:6px">${lengkap?'✓ Lengkap':'⚠️ Tidak Lengkap'}</span></div><div style="display:flex;gap:8px"><button class="btn-ghost" style="font-size:12px" onclick="editGridK2('${g.tingkatan}','${g.jenis}','${g.tahun}')">✏️ Edit</button><button class="btn-danger" style="font-size:12px" onclick="padamSetK2('${g.tingkatan}','${g.jenis}','${g.tahun}')">🗑 Padam Set</button></div></div><div class="card-body" style="padding:12px 16px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"><div><div style="font-size:11px;font-weight:700;color:var(--indigo);margin-bottom:8px">BAHAGIAN A (${bhgA.length} × /10)</div>${bhgA.map(s=>`<div style="display:flex;gap:8px;margin-bottom:6px;padding:6px 10px;background:var(--bg);border-radius:7px"><span style="font-family:var(--ffm);font-weight:700;color:var(--indigo);flex-shrink:0;font-size:12px">A${s.soalan_no}</span><span style="font-size:11px;color:var(--sub);font-family:var(--ffm)">${s.sp_kod||'<span style="color:var(--rose)">Kosong</span>'}</span></div>`).join('')}</div><div><div style="font-size:11px;font-weight:700;color:var(--emerald);margin-bottom:8px">BAHAGIAN B (${bhgB.length} × /15)</div>${bhgB.map(s=>`<div style="display:flex;gap:8px;margin-bottom:6px;padding:6px 10px;background:var(--bg);border-radius:7px"><span style="font-family:var(--ffm);font-weight:700;color:var(--emerald);flex-shrink:0;font-size:12px">B${s.soalan_no}</span><span style="font-size:11px;color:var(--sub);font-family:var(--ffm)">${s.sp_kod||'<span style="color:var(--rose)">Kosong</span>'}</span></div>`).join('')}</div><div><div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:8px">BAHAGIAN C (${bhgC.length} × /20)</div>${bhgC.map(s=>`<div style="display:flex;gap:8px;margin-bottom:6px;padding:6px 10px;background:var(--bg);border-radius:7px"><span style="font-family:var(--ffm);font-weight:700;color:var(--amber);flex-shrink:0;font-size:12px">C${s.soalan_no}</span><span style="font-size:11px;color:var(--sub);font-family:var(--ffm)">${s.sp_kod||'<span style="color:var(--rose)">Kosong</span>'}</span></div>`).join('')}</div></div></div></div>`;
+  });
+  document.getElementById('tetapan-k2-body').innerHTML=html;
+}
+
+async function editGridK2(ting,jenis,tahun){
+  document.getElementById('k2g-ting').value=ting;
+  document.getElementById('k2g-jenis').value=jenis;
+  document.getElementById('k2g-tahun').value=tahun;
+  document.getElementById('sc-tetapan-k2').scrollIntoView({behavior:'smooth'});
+  await muatGridK2();
+}
+
+async function padamSetK2(ting,jenis,tahun){
+  if(!confirm('Padam semua tetapan K2 untuk T'+ting+' '+kodJenis(jenis)+' '+tahun+'?')) return;
+  const{error}=await db.from('tetapan_k2').delete().eq('tingkatan',ting).eq('jenis_pentaksiran',jenis).eq('tahun',tahun);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tunjukToast('✅ Set K2 dipadam.','success');muatTetapanK2();
+}
+</script>
+</body>
+</html>
