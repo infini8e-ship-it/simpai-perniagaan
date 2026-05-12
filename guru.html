@@ -110,7 +110,7 @@
   <div id="sub-prestasi-guru" style="display:none">
     <div class="sec-hd">
       <div><div class="sec-sub">Pencapaian SPM Perniagaan — <span id="nama-sekolah-prestasi">—</span></div></div>
-      
+      <button class="btn-ghost" onclick="cetakPrestasiGuru()" style="font-size:13px">🖨️ Cetak</button>
     </div>
     <div class="card" style="margin-bottom:16px;overflow:visible">
       <div class="card-body" style="overflow:visible">
@@ -150,7 +150,7 @@
           <option value="%lulus">% Lulus</option>
         </select>
       </div>
-      <div class="card-body"><canvas id="chart-guru" height="100"></canvas></div>
+      <div class="card-body" style="position:relative;height:320px"><canvas id="chart-guru"></canvas></div>
     </div>
     <div class="card">
       <div class="card-head"><div class="card-title">📋 Rekod Prestasi</div></div>
@@ -227,7 +227,7 @@
           <button class="btn-primary" onclick="simpanMurid()" id="btn-simpan-murid" style="font-size:12.5px">💾 Simpan Semua</button>
         </div>
       </div>
-      <div class="card-body" style="padding:0">
+      <div class="card-body" style="padding:0;overflow-y:auto;max-height:70vh;position:relative">
         <table class="data-table" id="sm-table">
           <thead>
             <tr>
@@ -1205,15 +1205,7 @@ async function muatPrestasiGuru(forceRefresh = false) {
     r['mata pelajaran'] === 'PERNIAGAAN' &&
     r['kod sekolah'] === STATE.kodSekolah
   );
-  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
-  const jpSet = [...new Set(_rawSpmGuru.map(r => r['jenis pentaksiran']).filter(Boolean))].sort((a,b) => {
-    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
-    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
-    if (tA !== tB) return tA - tB;
-    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
-    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
-    return (ai===-1?99:ai) - (bi===-1?99:bi);
-  });
+  const jpSet = [...new Set(_rawSpmGuru.map(r => r['jenis pentaksiran']).filter(Boolean))].sort(sortJP);
   const elDDC = document.getElementById('guru-ddc');
   if (elDDC) elDDC.innerHTML = jpSet.map(j =>
     `<label class="ddc-item"><input type="checkbox" value="${j}" onchange="kemaskiniLabelDdcGuru()"> ${j}</label>`
@@ -1254,6 +1246,24 @@ function resetTapisanGuru() {
   _renderPrestasiGuru();
 }
 
+function sortJP(a, b) {
+  const aUp = a.toUpperCase();
+  const bUp = b.toUpperCase();
+  // Assign nilai urutan untuk sort
+  // PASA T4 XXXX → sort key: XXXX.1
+  // PPSA T5 XXXX → sort key: XXXX.2
+  // PSPM T5 XXXX → sort key: XXXX.3
+  // SPM XXXX     → sort key: XXXX.4
+  function kunci(s) {
+    const t = s.match(/\d{4}/) ? parseInt(s.match(/\d{4}/)[0]) : 0;
+    if (/PASA/.test(s))       return t + 0.1;
+    if (/PPSA/.test(s))       return t + 0.2;
+    if (/PSPM/.test(s))       return t + 0.3;
+    return t + 0.4; // SPM atau lain
+  }
+  return kunci(aUp) - kunci(bUp);
+}
+
 function _renderPrestasiGuru() {
   if (!_filteredSpmGuru.length) {
     document.getElementById('guru-spm-kad').style.display = 'none';
@@ -1290,15 +1300,7 @@ function renderChartGuru() {
   const metrik = (document.getElementById('guru-c-metrik') || {}).value || 'gpmp';
   if (!_filteredSpmGuru.length) { wrap.style.display = 'none'; return; }
 
-  const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
-  const jpList = [...new Set(_filteredSpmGuru.map(r => r['jenis pentaksiran']))].sort((a,b) => {
-    const tA = a.match(/\d{4}/) ? +a.match(/\d{4}/)[0] : 0;
-    const tB = b.match(/\d{4}/) ? +b.match(/\d{4}/)[0] : 0;
-    if (tA !== tB) return tA - tB;
-    const ai = _jpOrder.findIndex(o => a.includes(o)||o.includes(a));
-    const bi = _jpOrder.findIndex(o => b.includes(o)||o.includes(b));
-    return (ai===-1?99:ai) - (bi===-1?99:bi);
-  });
+  const jpList = [...new Set(_filteredSpmGuru.map(r => r['jenis pentaksiran']))].sort(sortJP);
 
   const WARNA = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
   const nilaiList = jpList.map(jp => {
@@ -1318,6 +1320,7 @@ function renderChartGuru() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         datalabels: {
@@ -1366,23 +1369,137 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ================================================================
-// MODUL SASARAN MURID — GURU
+// MODUL SASARAN MURID — GURU v3
 // ================================================================
 var _etrSekolah = null;
-var _muridList = [];
-var _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+var _muridList = [];       // data dari skor_master
+var _sasaranData = {};     // { nama_murid: { gred_sasaran, status_calon, kelas, gred_ppsa } }
 var _sasaranStatus = 'DRAF';
 var _gpnNegeri = 4.71;
 
+// ── Helper: nilai gred ──
+function nilaiGred(g) {
+  const map = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'C+':5,'C':6,'D':7,'E':8};
+  return map[g] !== undefined ? map[g] : null;
+}
+
+// ── Kira GP semasa berdasarkan calon aktif ──
+function kiraGPSasaran() {
+  const aktif = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon || 'CALON_SPM') === 'CALON_SPM');
+  if (!aktif.length) return null;
+  let jumlah = 0, bilGred = 0;
+  aktif.forEach(m => {
+    const g = _sasaranData[m.nama_murid]?.gred_sasaran;
+    const v = nilaiGred(g);
+    if (v !== null) { jumlah += v; bilGred++; }
+  });
+  if (!bilGred) return null;
+  // Penyebut = jumlah semua murid aktif (termasuk yang tiada gred)
+  return Math.round((jumlah / aktif.length) * 100) / 100;
+}
+
+// ── Kuota hidden JPN (tidak dipapar kepada guru) ──
+function _kuotaHidden() {
+  const e = _etrSekolah;
+  if (!e) return { cem: 0, kep: 0, lul: 0 };
+  return {
+    cem: (e.bil_aplus_semasa||e.bil_aplus||0)+(e.bil_a_semasa||e.bil_a||0)+(e.bil_aminus_semasa||e.bil_aminus||0),
+    kep: (e.bil_bplus_semasa||e.bil_bplus||0)+(e.bil_b_semasa||e.bil_b||0)+(e.bil_cplus_semasa||e.bil_cplus||0)+(e.bil_c_semasa||e.bil_c||0),
+    lul: (e.bil_d_semasa||e.bil_d||0)+(e.bil_e_semasa||e.bil_e||0)
+  };
+}
+
+function resetGredSasaran() {
+  document.getElementById('konfirm-tajuk').textContent = 'Reset Gred Sasaran';
+  document.getElementById('konfirm-mesej').innerHTML = 'Reset semua gred sasaran kepada kosong?';
+  document.getElementById('konfirm-btn').textContent = 'Ya, Reset';
+  window._konfirmExec = () => {
+    _muridList.forEach(m => {
+      if (_sasaranData[m.nama_murid]?.status_calon !== 'GUGUR_SPM')
+        _sasaranData[m.nama_murid] = { ..._sasaranData[m.nama_murid], gred_sasaran: null };
+    });
+    tutupModal();
+    tunjukToast('✅ Gred sasaran telah diset semula.', 'success');
+    renderBorangSasaran();
+  };
+  bukaModal('modal-konfirm');
+}
+// ── Auto-assign gred berdasarkan kelompok gred PPSA ──
+function autoIsiGredSasaran() {
+  const gredCem = ['A+','A','A-'];
+  const gredKep = ['B+','B','C+','C'];
+  const gredLul = ['D','E'];
+
+  _muridList.forEach(m => {
+    // Jangan override murid Gugur SPM
+    if (_sasaranData[m.nama_murid]?.status_calon === 'GUGUR_SPM') return;
+
+    const ppsa = m.gred;
+    let assign;
+
+    if (gredCem.includes(ppsa))      assign = ppsa;
+    else if (gredKep.includes(ppsa)) assign = ppsa;
+    else if (ppsa === 'C-')          assign = 'C'; // C- → naik ke C
+    else if (gredLul.includes(ppsa)) assign = ppsa;
+    else                              assign = 'E'; // TH atau null → E
+
+    _sasaranData[m.nama_murid] = {
+      ..._sasaranData[m.nama_murid],
+      gred_sasaran: assign,
+      status_calon: 'CALON_SPM'
+    };
+  });
+
+  tunjukToast('✅ Gred sasaran diisi automatik. Semak dan ubah jika perlu.', 'success', 4000);
+  renderBorangSasaran();
+}
+
+// ── Tukar gred sasaran murid (dari radio button) ──
+function setGredSasaran(nama, gred) {
+  if (!_sasaranData[nama]) _sasaranData[nama] = { status_calon: 'CALON_SPM' };
+  _sasaranData[nama].gred_sasaran = gred || null;
+  // Kemaskini warna baris
+  const key = nama.replace(/\s/g,'_').replace(/'/g,'_');
+  const tr = document.querySelector(`tr[data-murid="${key}"]`);
+  if (tr) tr.style.background = gred ? '' : 'var(--rose-l,#fff5f5)';
+  _kemaskiniGPBar();
+}
+
+// ── Tukar status calon murid ──
+function setStatusCalon(nama, status) {
+  if (!_sasaranData[nama]) _sasaranData[nama] = { status_calon: 'CALON_SPM' };
+  _sasaranData[nama].status_calon = status;
+  if (status === 'GUGUR_SPM') _sasaranData[nama].gred_sasaran = null;
+  _kemaskiniGPBar();
+  renderBorangSasaran();
+}
+
+// ── Kemaskini GP bar sahaja (tanpa render semula) ──
+function _kemaskiniGPBar() {
+  const gp = kiraGPSasaran();
+  const gpEl = document.getElementById('gp-bar-val');
+  const infoEl = document.getElementById('gp-bar-info');
+  if (!gpEl) return;
+  const etrGP = parseFloat((_etrSekolah?.etr_gp_semasa || _etrSekolah?.etr_gp || 0));
+  const capai = gp !== null && gp <= etrGP;
+  gpEl.textContent = gp !== null ? gp.toFixed(2) : '—';
+  gpEl.style.color = capai ? 'var(--ok)' : 'var(--amber)';
+  const aktif = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM').length;
+  const gugur = _muridList.filter(m => _sasaranData[m.nama_murid]?.status_calon === 'GUGUR_SPM').length;
+  const kosong = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM' && nilaiGred(_sasaranData[m.nama_murid]?.gred_sasaran) === null).length;
+  if (infoEl) infoEl.textContent = `${aktif} murid aktif${gugur?' | '+gugur+' Gugur SPM':''}${kosong?' | ⚠️ '+kosong+' belum diisi':''}`;
+  const barEl = document.getElementById('kelompok-bar');
+  if (barEl) barEl.innerHTML = _renderKelompokBar();
+}
+
+// ── Muat data ──
 async function muatSasaranMurid() {
   const wrap = document.getElementById('sasaran-murid-wrap');
   wrap.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div> Memuatkan...</div>';
 
-  // Muat GPN negeri
   const { data: tetap } = await db.from('tetapan_umum').select('kunci,nilai').eq('kunci','gpn_negeri_2026');
   if (tetap && tetap[0]) _gpnNegeri = parseFloat(tetap[0].nilai) || 4.71;
 
-  // Muat ETR sekolah
   const { data: etr } = await db.from('etr_sasaran')
     .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah).single();
 
@@ -1395,70 +1512,101 @@ async function muatSasaranMurid() {
   }
   _etrSekolah = etr;
 
-  // Muat murid dari skor_master PPSA T5 2026
   const { data: murid } = await db.from('skor_master')
     .select('nama_murid, kelas, gred, markah_wajaran')
     .eq('kod_sekolah', STATE.kodSekolah)
     .eq('tingkatan','5')
     .eq('jenis_pentaksiran','PENTAKSIRAN PERTENGAHAN SESI AKADEMIK')
     .eq('tahun','2026')
+    .order('kelas', { ascending: true })
     .order('markah_wajaran', { ascending: false });
 
   if (!murid || !murid.length) {
     wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state" style="padding:40px">
       <div class="ico">⚠️</div>
-      <p>Tiada data PPSA T5 2026 dijumpai. Sila sync tapak analisis dahulu sebelum isi borang sasaran.</p>
+      <p>Tiada data PPSA T5 2026 dijumpai. Sila sync tapak analisis dahulu.</p>
     </div></div></div>`;
     return;
   }
   _muridList = murid;
 
-  // Muat sasaran sedia ada
+  // Muat sasaran sedia ada dari DB
   const { data: sedia } = await db.from('sasaran_murid')
     .select('*').eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
-  _sasaranPilihan = { CEMERLANG:[], KEPUJIAN:[], LULUS:[], GAGAL:[] };
+
+  _sasaranData = {};
+  // Init semua murid dengan default
+  murid.forEach(m => {
+    _sasaranData[m.nama_murid] = { gred_sasaran: null, status_calon: 'CALON_SPM', kelas: m.kelas, gred_ppsa: m.gred };
+  });
+  // Override dengan data DB jika ada
   if (sedia && sedia.length) {
     sedia.forEach(s => {
-      if (_sasaranPilihan[s.kategori]) _sasaranPilihan[s.kategori].push({ nama: s.nama_murid, gred: s.gred_semasa });
+      if (_sasaranData[s.nama_murid]) {
+        _sasaranData[s.nama_murid].gred_sasaran = s.gred_sasaran || null;
+        _sasaranData[s.nama_murid].status_calon = s.status_calon || 'CALON_SPM';
+      }
     });
-    _sasaranStatus = sedia[0].status || 'DRAF';
+    _sasaranStatus = sedia[0].status_borang || 'DRAF';
   }
 
   renderBorangSasaran();
 }
-
-function kuotaMin(kat) {
-  const e = _etrSekolah;
-  if (!e) return 0;
-  if (kat === 'CEMERLANG') return (e.bil_aplus_semasa||e.bil_aplus||0)+(e.bil_a_semasa||e.bil_a||0)+(e.bil_aminus_semasa||e.bil_aminus||0);
-  if (kat === 'KEPUJIAN')  return (e.bil_bplus_semasa||e.bil_bplus||0)+(e.bil_b_semasa||e.bil_b||0)+(e.bil_cplus_semasa||e.bil_cplus||0)+(e.bil_c_semasa||e.bil_c||0);
-  if (kat === 'LULUS')     return (e.bil_d_semasa||e.bil_d||0)+(e.bil_e_semasa||e.bil_e||0);
-  if (kat === 'GAGAL')     return (e.bil_g_semasa||e.bil_g||0);
-  return 0;
+function _renderKelompokBar() {
+  const aktifList = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM');
+  const total = aktifList.length;
+  const gredCem = ['A+','A','A-'];
+  const gredKep = ['B+','B','C+','C'];
+  const gredLul = ['D','E'];
+  const bilCem = aktifList.filter(m => gredCem.includes(_sasaranData[m.nama_murid]?.gred_sasaran)).length;
+  const bilKep = aktifList.filter(m => gredKep.includes(_sasaranData[m.nama_murid]?.gred_sasaran)).length;
+  const bilLul = aktifList.filter(m => gredLul.includes(_sasaranData[m.nama_murid]?.gred_sasaran)).length;
+  const bilKosong = aktifList.filter(m => !_sasaranData[m.nama_murid]?.gred_sasaran).length;
+  const maks = total || 1;
+  return [
+    { label:'Cemerlang',  bil:bilCem,    warna:'#059669' },
+    { label:'Kepujian',   bil:bilKep,    warna:'#0891b2' },
+    { label:'Lulus',      bil:bilLul,    warna:'#d97706' },
+    { label:'Tiada Gred', bil:bilKosong, warna:'#e11d48' },
+  ].map(r => {
+    const pct = Math.round(r.bil / maks * 100);
+    return `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:2px">
+        <span style="color:${r.warna}">${r.label}</span>
+        <span style="color:${r.label==='Tiada Gred'&&r.bil>0?'#e11d48':r.warna}">${r.bil}/${total} ${r.label==='Tiada Gred'&&r.bil>0?'⚠️':'✓'}</span>
+      </div>
+      <div style="background:#e2e8f4;border-radius:4px;height:7px;overflow:hidden">
+        <div style="width:${pct}%;min-width:${r.bil>0?'4px':'0'};background:${r.warna};height:100%;border-radius:4px;transition:width .3s"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
-
-function nilaiGred(g) {
-  const map = {'A+':0,'A':1,'A-':2,'B+':3,'B':4,'C+':5,'C':6,'D':7,'E':8,'G':9};
-  return map[g] !== undefined ? map[g] : null;
-}
-
-function kiraGPSasaran() {
-  const semua = [..._sasaranPilihan.CEMERLANG, ..._sasaranPilihan.KEPUJIAN, ..._sasaranPilihan.LULUS, ..._sasaranPilihan.GAGAL];
-  const valid = semua.filter(m => nilaiGred(m.gred) !== null);
-  if (!valid.length) return null;
-  const jumlah = valid.reduce((s,m) => s + nilaiGred(m.gred), 0);
-  return Math.round((jumlah / valid.length) * 100) / 100;
-}
-
+function initStickyHeader() {}
+// ── Render borang utama ──
 function renderBorangSasaran() {
   const e = _etrSekolah;
-  const gp = kiraGPSasaran();
-  const gpStr = gp !== null ? gp.toFixed(2) : '—';
   const etrGP = (e.etr_gp_semasa || e.etr_gp || 0).toFixed(2);
   const kat = e.kategori || 3;
   const katLabel = ['','Cemerlang','Harapan Tinggi','Peningkatan','Pengukuhan'][kat];
   const katWarna = ['','var(--ok)','var(--info)','var(--amber)','var(--rose)'][kat];
   const sudahHantar = _sasaranStatus === 'DIHANTAR_SEKOLAH';
+  const gp = kiraGPSasaran();
+  const gpStr = gp !== null ? gp.toFixed(2) : '—';
+  const capai = gp !== null && gp <= parseFloat(etrGP);
+  const pct = gp !== null ? Math.max(0, Math.min(100, Math.round((1 - gp/9) * 100))) : 0;
+  const aktif = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM').length;
+  const gugur = _muridList.filter(m => _sasaranData[m.nama_murid]?.status_calon === 'GUGUR_SPM').length;
+  const kosong = _muridList.filter(m => (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM' && nilaiGred(_sasaranData[m.nama_murid]?.gred_sasaran) === null).length;
+
+  // Susun murid ikut kelas
+  const ikutKelas = {};
+  _muridList.forEach(m => {
+    const k = m.kelas || '—';
+    if (!ikutKelas[k]) ikutKelas[k] = [];
+    ikutKelas[k].push(m);
+  });
+
+  const GRED_LIST = ['A+','A','A-','B+','B','C+','C','D','E'];
 
   const wrap = document.getElementById('sasaran-murid-wrap');
   wrap.innerHTML = `
@@ -1471,159 +1619,172 @@ function renderBorangSasaran() {
         ETR Sasaran GP: <strong style="color:var(--indigo)">${etrGP}</strong> &nbsp;|&nbsp;
         GPN Negeri: <strong>${_gpnNegeri}</strong>
       </div>
-      <div style="font-size:13px;color:var(--sub);margin-top:2px">Jumlah Calon T5: <strong>${e.jum_calon_semasa||e.jum_calon||0} murid</strong></div>
+      <div style="font-size:13px;color:var(--sub);margin-top:2px">Jumlah Calon T5: <strong>${_muridList.length} murid</strong></div>
     </div>
   </div>
 
-  <!-- Stat Kuota -->
-  <div class="stats-row stats-4" style="margin-bottom:16px">
-    ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => {
-      const bil = _sasaranPilihan[k].length;
-      const min = kuotaMin(k);
-      const ok = bil >= min;
-      const warna = k==='CEMERLANG'?'var(--ok)':k==='KEPUJIAN'?'var(--info)':k==='LULUS'?'var(--amber)':'var(--rose)';
-      return `<div class="stat-card" style="border-top:3px solid ${warna}">
-        <div class="stat-val" style="color:${ok?warna:'var(--rose)'}">${bil}/${min}</div>
-        <div class="stat-lbl">${k}</div>
-      </div>`;
-    }).join('')}
-  </div>
-
-  <!-- GP Semasa vs ETR -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-    <div style="background:#1e293b;color:#fff;padding:14px;border-radius:10px">
-      <div style="font-size:11px;opacity:0.8">ETR SASARAN GP</div>
-      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)">${etrGP}</div>
-      <div style="font-size:11px;opacity:0.8">Kat ${kat}: ${katLabel}</div>
-    </div>
-    <div id="gp-semasa-kad" style="background:linear-gradient(135deg,#1a3c5e,#0f5132);color:#fff;padding:14px;border-radius:10px">
-      <div style="font-size:11px;opacity:0.8">GP SASARAN SEMASA</div>
-      <div style="font-size:28px;font-weight:800;font-family:var(--ffm)" id="gp-semasa-val">${gpStr}</div>
-      <div style="font-size:11px;opacity:0.9" id="gp-semasa-info">${_sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length} murid dipilih</div>
-    </div>
-  </div>
-
-  <!-- Bahagian per Kategori -->
-  ${['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].map(k => renderSeksyenKategori(k, sudahHantar)).join('')}
-
-  <!-- Footer Butang -->
-  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap">
-    ${sudahHantar ? '<span style="color:var(--ok);font-weight:700;align-self:center">✓ Borang telah dihantar</span>' : `
-    <button class="btn-ghost" onclick="simpanDrafSasaran()">💾 Simpan Draf</button>
-    <button class="btn-primary" onclick="hantarBorangSasaran()">📤 Hantar Borang</button>`}
-  </div>`;
-}
-
-function renderSeksyenKategori(kat, disabled) {
-  const min = kuotaMin(kat);
-  const senarai = _sasaranPilihan[kat];
-  const bil = senarai.length;
-  const ok = bil >= min;
-  const warna = kat==='CEMERLANG'?'var(--ok)':kat==='KEPUJIAN'?'var(--info)':kat==='LULUS'?'var(--amber)':'var(--rose)';
-  const label = kat==='CEMERLANG'?'Cemerlang (A+, A, A-)':kat==='KEPUJIAN'?'Kepujian (B+, B, C+, C)':kat==='LULUS'?'Lulus (D, E)':'Gagal (G)';
-
-  // Murid yang belum dipilih dalam mana-mana kategori
-  const dipilih = new Set([..._sasaranPilihan.CEMERLANG,..._sasaranPilihan.KEPUJIAN,..._sasaranPilihan.LULUS,..._sasaranPilihan.GAGAL].map(m=>m.nama));
-  const tersedia = _muridList.filter(m => !dipilih.has(m.nama_murid) || senarai.find(s=>s.nama===m.nama_murid));
-
-  return `<div class="card" style="margin-bottom:12px;border-left:4px solid ${warna}">
+  <!-- GP Bar + Auto-isi -->
+  <div class="card" style="margin-bottom:16px">
     <div class="card-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div style="font-weight:700;font-size:14px;color:${warna}">${label} <span style="font-size:12px;font-weight:600">Min: ${min}</span></div>
-        <div style="font-size:12px;color:${ok?'var(--ok)':'var(--rose)'};font-weight:700">${ok?'✓':'⚠️'} ${bil} / ${min} murid (Min ${min})</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">GP Sasaran Semasa</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span id="gp-bar-val" style="font-size:28px;font-weight:800;font-family:var(--ffm);color:${capai?'var(--ok)':'var(--amber)'}">${gpStr}</span>
+            <span style="font-size:13px;color:var(--muted)">/ ETR: <strong style="color:var(--indigo)">${etrGP}</strong></span>
+            ${capai ? '<span style="font-size:12px;color:var(--ok);font-weight:700">✓ Sasaran dicapai</span>' : '<span style="font-size:12px;color:var(--amber);font-weight:600">⚠️ Belum capai ETR</span>'}
+          </div>
+          <div id="gp-bar-info" style="font-size:12px;color:var(--sub);margin-top:2px">${aktif} murid aktif${gugur?' | '+gugur+' Gugur SPM':''}${kosong?' | ⚠️ '+kosong+' belum diisi':''}</div>
+        </div>
+        ${!sudahHantar ? `
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:13px" onclick="autoIsiGredSasaran()">🔄 Auto-isi Gred</button>
+            <button class="btn-ghost" style="font-size:13px;color:var(--rose);border-color:var(--rose-m)" onclick="resetGredSasaran()">✕ Reset Gred</button>
+          </div>` : ''}
       </div>
-      ${senarai.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-        ${senarai.map(m => `<span style="background:${warna}22;color:${warna};border:1px solid ${warna}44;padding:4px 10px;border-radius:20px;font-size:12.5px;font-weight:600">
-          ${m.nama} <span style="opacity:0.7">(${m.gred||'—'})</span>
-          ${!disabled?`<span onclick="buangMuridSasaran('${kat}','${m.nama}')" style="cursor:pointer;margin-left:4px;opacity:0.7">✕</span>`:''}
-        </span>`).join('')}
-      </div>` : `<div style="font-size:13px;color:var(--sub);margin-bottom:10px">Tiada murid disenaraikan.</div>`}
-      ${!disabled ? `<div style="display:flex;gap:8px;align-items:center">
-        <select class="form-select" id="dd-${kat}" style="flex:1;font-size:13px">
-          <option value="">-- Pilih Murid --</option>
-          ${tersedia.map(m => `<option value="${m.nama_murid}" data-gred="${m.gred||'—'}">${m.nama_murid} (${m.kelas||'—'}) — ${m.gred||'—'}</option>`).join('')}
-        </select>
-        <button class="btn-ghost" style="white-space:nowrap;font-size:13px" onclick="tambahMuridSasaran('${kat}')">+ Tambah</button>
-      </div>` : ''}
+      <div id="kelompok-bar" style="margin-top:8px;max-width:50%">${_renderKelompokBar()}</div>
     </div>
+  </div>
+
+  <!-- Jadual Murid -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:0;overflow-y:auto;max-height:65vh">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:var(--bg2)">
+            <th style="padding:8px 12px;text-align:left;font-weight:700;color:var(--sub);white-space:nowrap;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">Nama Murid</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--ok);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">A+</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--ok);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">A</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--ok);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">A-</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--info);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">B+</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--info);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">B</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--info);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">C+</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--info);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">C</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--amber);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">D</th>
+            <th style="padding:8px 4px;text-align:center;font-weight:700;color:var(--amber);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">E</th>
+            <th style="padding:8px 12px;text-align:center;font-weight:700;color:var(--sub);font-size:11px;position:sticky;top:0;background:#e8edf8;z-index:10;box-shadow:0 1px 0 var(--border)">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.keys(ikutKelas).sort().map(kls => `
+            <tr style="background:var(--bg2)">
+              <td colspan="11" style="padding:6px 12px;font-size:11px;font-weight:700;color:var(--indigo);letter-spacing:.5px">${kls}</td>
+            </tr>
+            ${ikutKelas[kls].map(m => {
+              const d = _sasaranData[m.nama_murid] || {};
+              const gugurM = d.status_calon === 'GUGUR_SPM';
+              const gredPPSA = m.gred || '—';
+              const gredSasaran = d.gred_sasaran;
+              const kosongM = !gugurM && !nilaiGred(gredSasaran);
+              const warnaBaris = kosongM ? 'background:var(--rose-soft,#fff5f5)' : '';
+              const muridKey = m.nama_murid.replace(/\s/g,'_').replace(/'/g,'_');
+              return `<tr data-murid="${muridKey}" style="border-top:1px solid var(--border);${warnaBaris}">
+                <td style="padding:7px 12px;white-space:nowrap">
+                  <div style="font-weight:600;color:${gugurM?'var(--muted)':'var(--ink)'}">${m.nama_murid}</div>
+                  <div style="font-size:11px;color:var(--muted)">PPSA: ${gredPPSA}</div>
+                </td>
+                ${GRED_LIST.map(g => {
+                  const warna = ['A+','A','A-'].includes(g)?'var(--ok)':['B+','B','C+','C'].includes(g)?'var(--info)':'var(--amber)';
+                  const aktifG = gredSasaran === g;
+                  return `<td style="padding:4px;text-align:center">
+                    ${gugurM ? `<span style="color:var(--border)">—</span>` :
+                    `<input type="radio" name="gs_${m.nama_murid.replace(/\s/g,'_')}"
+                      value="${g}" ${aktifG?'checked':''}
+                      onchange="setGredSasaran('${m.nama_murid.replace(/'/g,"\\'")}','${g}')"
+                      style="accent-color:${warna};width:15px;height:15px;cursor:pointer">`}
+                  </td>`;
+                }).join('')}
+                <td style="padding:4px 12px;text-align:center">
+                  <select onchange="setStatusCalon('${m.nama_murid.replace(/'/g,"\\'")}',this.value)"
+                    style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--ink);cursor:pointer">
+                    <option value="CALON_SPM" ${!gugurM?'selected':''}>Calon SPM</option>
+                    <option value="GUGUR_SPM" ${gugurM?'selected':''}>Gugur SPM</option>
+                  </select>
+                </td>
+              </tr>`;
+            }).join('')}
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:24px;flex-wrap:wrap">
+    ${sudahHantar
+      ? '<span style="color:var(--ok);font-weight:700;align-self:center">✓ Borang telah dihantar ke JPN</span>'
+      : `<button class="btn-ghost" onclick="simpanDrafSasaran()">💾 Simpan Draf</button>
+         <button class="btn-primary" onclick="hantarBorangSasaran()">📤 Hantar ke JPN</button>`}
   </div>`;
-}
-
-function tambahMuridSasaran(kat) {
-  const sel = document.getElementById('dd-'+kat);
-  if (!sel || !sel.value) return;
-  const nama = sel.value;
-  const gred = sel.selectedOptions[0]?.dataset.gred || '—';
-  // Semak dah dipilih dalam kategori lain
-  for (const k of ['CEMERLANG','KEPUJIAN','LULUS','GAGAL']) {
-    if (_sasaranPilihan[k].find(m => m.nama === nama)) {
-      tunjukToast('⚠️ '+nama+' sudah dipilih dalam '+k,'warn'); return;
-    }
-  }
-  _sasaranPilihan[kat].push({ nama, gred });
-  kemaskiniGPSasaran();
-  renderBorangSasaran();
-}
-
-function buangMuridSasaran(kat, nama) {
-  _sasaranPilihan[kat] = _sasaranPilihan[kat].filter(m => m.nama !== nama);
-  kemaskiniGPSasaran();
-  renderBorangSasaran();
-}
-
-function kemaskiniGPSasaran() {
-  const gp = kiraGPSasaran();
-  const el = document.getElementById('gp-semasa-val');
-  const info = document.getElementById('gp-semasa-info');
-  if (el) el.textContent = gp !== null ? gp.toFixed(2) : '—';
-  const jum = _sasaranPilihan.CEMERLANG.length+_sasaranPilihan.KEPUJIAN.length+_sasaranPilihan.LULUS.length+_sasaranPilihan.GAGAL.length;
-  if (info) info.textContent = jum+' murid dipilih';
+  setTimeout(initStickyHeader, 50);
 }
 
 async function simpanDrafSasaran() {
+  if (_sasaranStatus === 'DIHANTAR_SEKOLAH') { tunjukToast('⚠️ Borang sudah dihantar.','warn'); return; }
   await _simpanSasaran('DRAF');
+  await db.from('etr_sasaran').update({ status_sekolah:'DISEMAK', tarikh_sekolah: new Date().toISOString() })
+    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
 }
 
 async function hantarBorangSasaran() {
-  const semua = ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'];
-  for (const k of semua) {
-    if (_sasaranPilihan[k].length < kuotaMin(k)) {
-      tunjukToast('⚠️ Kuota '+k+' belum dipenuhi (min '+kuotaMin(k)+')','warn',4000);
-      return;
-    }
+  if (_sasaranStatus === 'DIHANTAR_SEKOLAH') { tunjukToast('⚠️ Borang sudah dihantar.','warn'); return; }
+  // Semak ada murid CALON_SPM tanpa gred
+  const kosong = _muridList.filter(m =>
+    (_sasaranData[m.nama_murid]?.status_calon||'CALON_SPM') === 'CALON_SPM' &&
+    nilaiGred(_sasaranData[m.nama_murid]?.gred_sasaran) === null
+  );
+  if (kosong.length) {
+    tunjukToast(`⚠️ ${kosong.length} murid belum ada gred sasaran. Sila lengkapkan atau tandakan Gugur SPM.`,'warn',5000);
+    return;
   }
   await _simpanSasaran('DIHANTAR_SEKOLAH');
-  // Kemaskini status dalam etr_sasaran
   await db.from('etr_sasaran').update({ status_sekolah:'DIHANTAR_SEKOLAH', tarikh_sekolah: new Date().toISOString() })
     .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
 }
 
 async function _simpanSasaran(status) {
-  const rekod = [];
-  ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'].forEach(kat => {
-    _sasaranPilihan[kat].forEach(m => {
-      rekod.push({
-        tahun: '2026', kod_sekolah: STATE.kodSekolah,
-        nama_sekolah: STATE.namaSekolah, nama_murid: m.nama,
-        kategori: kat, gred_semasa: m.gred, status,
-        tarikh_kemaskini: new Date().toISOString(),
-        id_pengguna: STATE.id
-      });
-    });
-  });
+  const masa = new Date().toISOString();
+  const rekod = _muridList.map(m => ({
+    tahun: '2026',
+    kod_sekolah: STATE.kodSekolah,
+    nama_sekolah: STATE.namaSekolah,
+    nama_murid: m.nama_murid,
+    kelas: m.kelas || null,
+    gred_ppsa: m.gred || null,
+    gred_sasaran: _sasaranData[m.nama_murid]?.gred_sasaran || null,
+    status_calon: _sasaranData[m.nama_murid]?.status_calon || 'CALON_SPM',
+    status_borang: status,
+    tarikh_kemaskini: masa,
+    id_pengguna: STATE.id
+  }));
 
-  // Padam rekod lama dulu
-  await db.from('sasaran_murid').delete()
-    .eq('tahun','2026').eq('kod_sekolah', STATE.kodSekolah);
-
-  if (rekod.length) {
-    const { error } = await db.from('sasaran_murid').insert(rekod);
-    if (error) { tunjukToast('❌ '+error.message,'error'); return; }
-  }
+  const { error } = await db.from('sasaran_murid')
+    .upsert(rekod, { onConflict: 'tahun,kod_sekolah,nama_murid' });
+  if (error) { console.error('UPSERT error:', JSON.stringify(error)); tunjukToast('❌ '+error.message,'error'); return; }
 
   _sasaranStatus = status;
   tunjukToast(status==='DIHANTAR_SEKOLAH' ? '✅ Borang dihantar ke JPN!' : '✅ Draf disimpan.','success');
   renderBorangSasaran();
+}
+
+function cetakPrestasiGuru() {
+  var kadEl = document.getElementById('guru-spm-kad');
+  var jadualEl = document.getElementById('guru-spm-result');
+  if (!jadualEl) return;
+  var header = '<div style="padding:10px 0 14px;border-bottom:3px solid #1a3c5e;margin-bottom:14px"><table style="width:100%;border:none"><tr><td style="border:none"><div style="font-size:15px;font-weight:700;color:#1a3c5e">SISTEM ANALISIS ITEM PERNIAGAAN - JPN KEDAH</div><div style="font-size:12px;color:#333;margin-top:3px">Tab: Sejarah Prestasi</div><div style="font-size:11px;color:#555;margin-top:2px">' + (STATE.kodSekolah||'') + ' - ' + (STATE.namaSekolah||'').toUpperCase() + '</div></td><td style="border:none;text-align:right;vertical-align:top"><div style="font-size:10px;color:#888">Dicetak: ' + new Date().toLocaleString('ms-MY') + '</div><div style="font-size:10px;color:#888">Pengguna: ' + (STATE.nama||'') + '</div></td></tr></table></div>';
+  function bersih(h) { return (h||'').replace(/var\(--ok\)/g,'#059669').replace(/var\(--emerald[^)]*\)/g,'#059669').replace(/var\(--amber[^)]*\)/g,'#d97706').replace(/var\(--rose[^)]*\)/g,'#e11d48').replace(/var\(--indigo[^)]*\)/g,'#4f46e5').replace(/var\(--info\)/g,'#0891b2').replace(/var\(--cyan[^)]*\)/g,'#0891b2').replace(/var\(--bg[^)]*\)/g,'#e8edf8').replace(/var\(--border\)/g,'#e2e8f4').replace(/var\(--text\)/g,'#1a2035').replace(/var\(--sub\)/g,'#64748b').replace(/var\(--white\)/g,'#ffffff').replace(/var\(--ink\)/g,'#1a2035').replace(/var\(--ffm\)/g,'monospace'); }
+  var chartImg = '';
+  var canvas = document.getElementById('chart-guru');
+  if (canvas) { try { chartImg = '<div style="margin:14px 0"><img src="' + canvas.toDataURL() + '" style="max-width:100%"></div>'; } catch(e) {} }
+  var kadHtml = (kadEl && kadEl.style.display !== 'none') ? bersih(kadEl.outerHTML) : '';
+  var jadualHtml = bersih(jadualEl.innerHTML);
+  var css = 'body{font-family:Arial,sans-serif;font-size:12px;margin:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{width:100%;border-collapse:collapse}th,td{padding:6px 8px;border:1px solid #e2e8f4;font-size:11px}th{background:#1a3c5e;color:#fff}.stat-card{border:1px solid #e2e8f4;padding:8px 12px;border-radius:6px;display:inline-block;margin:4px;min-width:90px;text-align:center}.stat-val{font-size:18px;font-weight:800;font-family:monospace}.stat-lbl{font-size:10px;color:#64748b}.stats-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.sc-in .stat-val{color:#4f46e5}.sc-em .stat-val{color:#059669}.sc-cy .stat-val{color:#0891b2}.sc-am .stat-val{color:#d97706}.sc-ro .stat-val{color:#e11d48}.card{border:1px solid #e2e8f4;border-radius:8px;margin-bottom:10px}.card-head,.card-title{padding:8px 12px;background:#f8faff;font-weight:700;font-size:12px}.card-body{padding:12px}.chip,.sp{display:none}button{display:none}';
+  var w = window.open('', '_blank');
+  if (!w) { tunjukToast('Pop-up disekat.', 'warn', 3000); return; }
+  w.document.open();
+  w.document.write('<!DOCTYPE html><html><head><title>Sejarah Prestasi<\/title><style>' + css + '<\/style><\/head><body>' + header + kadHtml + chartImg + '<div>' + jadualHtml + '<\/div><\/body><\/html>');
+  w.document.close();
+  setTimeout(function() { w.print(); }, 800);
 }
 </script>
 </body>

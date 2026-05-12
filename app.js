@@ -426,29 +426,7 @@ window.addEventListener('load', function() {
   }
 });
 
-// ── AUTO LOGOUT (15 minit idle)
-(function() {
-  const MASA_IDLE = 15 * 60 * 1000;
-  var _idleTimer;
-
-  function resetIdle() {
-    clearTimeout(_idleTimer);
-    _idleTimer = setTimeout(function() {
-      if (!sessionStorage.getItem('simp_user')) return;
-      tunjukToast('⏱️ Sesi tamat. Log masuk semula.', 'warn', 4000);
-      setTimeout(function() {
-        sessionStorage.clear();
-        window.location.href = 'login.html';
-      }, 2000);
-    }, MASA_IDLE);
-  }
-
-  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev) {
-    document.addEventListener(ev, resetIdle, { passive: true });
-  });
-
-  resetIdle();
-})();
+// Auto logout — guna fungsi sedia ada dalam sistem
 
 // ── FORMAT TARIKH
 function fmtTarikh(ts) {

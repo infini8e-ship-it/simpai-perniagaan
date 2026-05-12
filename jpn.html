@@ -418,7 +418,7 @@
         <option value="% gagal">% Gagal</option>
       </select>
     </div>
-    <div class="card-body"><canvas id="chart-ppd" height="100"></canvas></div>
+    <div class="card-body" style="position:relative;height:320px"><canvas id="chart-ppd"></canvas></div>
   </div>
 
   <!-- CHART 2: PER SEKOLAH -->
@@ -438,7 +438,7 @@
         </select>
       </div>
     </div>
-    <div class="card-body"><canvas id="chart-sekolah" height="100"></canvas></div>
+    <div class="card-body" style="position:relative;height:320px"><canvas id="chart-sekolah"></canvas></div>
   </div>
 
   <!-- SENARAI SEKOLAH -->
@@ -529,7 +529,7 @@
       </select>
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <button class="btn-primary" onclick="bukaModalHantarSemua()">📤 Hantar Semua ke Sekolah</button>
-        <button class="btn-ghost" onclick="muatSasaranETR()">🔄 Refresh</button>
+        <button class="btn-ghost" onclick="kiraETRSebenar()" style="background:#ecfdf5;color:#065f46">🧮 Kira Semula ETR Negeri</button>
         <div style="margin-left:auto;font-size:12px;color:var(--sub);align-self:center" id="etr-status-ringkasan">—</div>
       </div>
       <div id="etr-jadual-wrap" style="overflow-x:auto"><div class="empty-state" style="padding:30px"><div class="ico">📋</div><p>Masukkan link sheet & tekan "Baca & Proses ETR"</p></div></div>
@@ -604,7 +604,46 @@
   </div>
 </div>
 
-<!-- MODAL HANTAR SEMUA -->
+async function lihatSasaranMurid(kod, nama) {
+  document.getElementById('ssm-nama').textContent = nama;
+  document.getElementById('ssm-body').innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+  bukaModal('modal-sasaran-murid');
+
+  const { data, error } = await db.from('sasaran_murid')
+    .select('*').eq('tahun','2026').eq('kod_sekolah', kod)
+    .order('kategori');
+
+  if (error || !data || !data.length) {
+    document.getElementById('ssm-body').innerHTML = '<div class="empty-state" style="padding:30px"><p>Tiada rekod sasaran murid.</p></div>';
+    return;
+  }
+
+  const kat = ['CEMERLANG','KEPUJIAN','LULUS','GAGAL'];
+  const warna = { CEMERLANG:'var(--ok)', KEPUJIAN:'var(--info)', LULUS:'var(--amber)', GAGAL:'var(--rose)' };
+  const status = data[0].status || '—';
+  const tarikh = data[0].tarikh_kemaskini ? new Date(data[0].tarikh_kemaskini).toLocaleString('ms-MY') : '—';
+
+  let html = `<div style="margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px">
+    Status: <strong style="color:var(--ok)">${status}</strong> &nbsp;|&nbsp; Tarikh: <strong>${tarikh}</strong> &nbsp;|&nbsp; Jumlah: <strong>${data.length} murid</strong>
+  </div>`;
+
+  kat.forEach(k => {
+    const murid = data.filter(m => m.kategori === k);
+    if (!murid.length) return;
+    html += `<div class="card" style="margin-bottom:10px;border-left:4px solid ${warna[k]}">
+      <div class="card-body">
+        <div style="font-weight:700;font-size:13px;color:${warna[k]};margin-bottom:8px">${k} (${murid.length} murid)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${murid.map(m => `<span style="background:${warna[k]}22;color:${warna[k]};border:1px solid ${warna[k]}44;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">${m.nama_murid} <span style="opacity:0.7">(${m.gred_semasa||'—'})</span></span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('ssm-body').innerHTML = html;
+}
+
+// ── MODAL HANTAR SEMUA
 <div class="modal-overlay" id="modal-etr-hantar">
   <div class="modal-box">
     <div class="modal-head"><div class="modal-title">📤 Hantar Sasaran ke Sekolah</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
@@ -618,7 +657,18 @@
     </div>
   </div>
 </div>
-
+<!-- MODAL SEMAK SASARAN MURID -->
+<div class="modal-overlay" id="modal-sasaran-murid">
+  <div class="modal-box" style="max-width:700px;width:95vw">
+    <div class="modal-head">
+      <div class="modal-title">👁️ Sasaran Murid — <span id="ssm-nama">—</span></div>
+      <button class="modal-close" onclick="tutupModal()">✕</button>
+    </div>
+    <div class="modal-body" id="ssm-body" style="max-height:65vh;overflow-y:auto">
+      <div class="loading-wrap"><div class="spinner spinner-dark"></div></div>
+    </div>
+  </div>
+</div>
 </main>
 
 <!-- MODAL EDIT SEKOLAH -->
@@ -2140,6 +2190,83 @@ async function simpanGPNSahaja() {
   tunjukToast('✅ GPN '+gpn+' disimpan.','success');
 }
 
+async function kiraETRSebenar() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Mengira...';
+
+  // Tarik data terkini dari Supabase
+  const { data, error } = await db.from('etr_sasaran')
+    .select('jum_calon, jum_calon_semasa, bil_aplus, bil_a, bil_aminus, bil_bplus, bil_b, bil_cplus, bil_c, bil_d, bil_e, bil_g, bil_aplus_semasa, bil_a_semasa, bil_aminus_semasa, bil_bplus_semasa, bil_b_semasa, bil_cplus_semasa, bil_c_semasa, bil_d_semasa, bil_e_semasa, bil_g_semasa, sudah_edit')
+    .eq('tahun','2026');
+
+  btn.disabled = false;
+  btn.textContent = '🧮 Kira Semula ETR Negeri';
+
+  if (error || !data) { tunjukToast('❌ Gagal tarik data','error'); return; }
+
+  // Kira GP Asal
+  const jumCalonAsal = data.reduce((s,x) => s+(x.jum_calon||0), 0);
+  const jumMataAsal = data.reduce((s,x) => (x.bil_aplus||0)*0+(x.bil_a||0)*1+(x.bil_aminus||0)*2+(x.bil_bplus||0)*3+(x.bil_b||0)*4+(x.bil_cplus||0)*5+(x.bil_c||0)*6+(x.bil_d||0)*7+(x.bil_e||0)*8+(x.bil_g||0)*9+s, 0);
+  const gpAsal = jumCalonAsal ? Math.round((jumMataAsal/jumCalonAsal)*100)/100 : 0;
+
+  // Kira GP Semasa — guna semasa jika sudah_edit, kalau tidak guna asal
+  const jumCalonSemasa = data.reduce((s,x) => s + (x.sudah_edit ? (x.jum_calon_semasa||x.jum_calon||0) : (x.jum_calon||0)), 0);
+  const jumMataSemasa = data.reduce((s,x) => {
+    const diedit = x.sudah_edit === true;
+    const ap = diedit?(x.bil_aplus_semasa||0):(x.bil_aplus||0);
+    const a  = diedit?(x.bil_a_semasa||0):(x.bil_a||0);
+    const am = diedit?(x.bil_aminus_semasa||0):(x.bil_aminus||0);
+    const bp = diedit?(x.bil_bplus_semasa||0):(x.bil_bplus||0);
+    const b  = diedit?(x.bil_b_semasa||0):(x.bil_b||0);
+    const cp = diedit?(x.bil_cplus_semasa||0):(x.bil_cplus||0);
+    const c  = diedit?(x.bil_c_semasa||0):(x.bil_c||0);
+    const dd = diedit?(x.bil_d_semasa||0):(x.bil_d||0);
+    const e  = diedit?(x.bil_e_semasa||0):(x.bil_e||0);
+    const g  = diedit?(x.bil_g_semasa||0):(x.bil_g||0);
+    return s+ap*0+a*1+am*2+bp*3+b*4+cp*5+c*6+dd*7+e*8+g*9;
+  },0);
+  const gpSemasa = jumCalonSemasa ? Math.round((jumMataSemasa/jumCalonSemasa)*100)/100 : 0;
+
+  const bilDiedit = data.filter(x => x.sudah_edit).length;
+  const gpnSasaran = parseFloat(document.getElementById('etr-gpn').value) || 4.71;
+  const bezaSasaran = Math.round((gpSemasa - gpnSasaran)*100)/100;
+  const arah = bezaSasaran > 0 ? '▲' : bezaSasaran < 0 ? '▼' : '=';
+  const warna = bezaSasaran > 0.2 ? '#e11d48' : bezaSasaran < -0.2 ? '#059669' : '#d97706';
+  const status = Math.abs(bezaSasaran) <= 0.2 ? '✓ Dalam Julat' : bezaSasaran > 0 ? '⚠️ Terlepas Sasaran' : '🎯 Lebih Baik';
+
+  let kad = document.getElementById('etr-perubahan-kad');
+  if (!kad) {
+    kad = document.createElement('div');
+    kad.id = 'etr-perubahan-kad';
+    const gpnAuto = document.getElementById('etr-gpn-auto');
+    if (gpnAuto) gpnAuto.insertAdjacentElement('afterend', kad);
+  }
+  kad.style.cssText = 'margin-top:12px;background:#f8faff;border:1px solid #e2e8f4;border-radius:10px;padding:14px 16px';
+  kad.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">📊 Kiraan ETR Negeri Terkini <span style="font-weight:400;text-transform:none">(${bilDiedit} sekolah diedit)</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;min-width:0">
+      <div style="background:#1e293b;color:#fff;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;opacity:0.8">ETR Asal (Sheet)</div>
+        <div style="font-size:22px;font-weight:800;font-family:var(--ffm)">${gpAsal.toFixed(2)}</div>
+        <div style="font-size:10px;opacity:0.7">${jumCalonAsal.toLocaleString()} calon</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#1a3c5e,#0f5132);color:#fff;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;opacity:0.8">ETR Semasa (${bilDiedit} sekolah diedit)</div>
+        <div style="font-size:22px;font-weight:800;font-family:var(--ffm)">${gpSemasa.toFixed(2)}</div>
+        <div style="font-size:10px;opacity:0.7">${jumCalonSemasa.toLocaleString()} calon</div>
+      </div>
+      <div style="background:#fff;border:2px solid ${warna};padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;color:var(--sub)">Beza vs Sasaran (${gpnSasaran})</div>
+        <div style="font-size:22px;font-weight:800;font-family:var(--ffm);color:${warna}">${arah} ${Math.abs(bezaSasaran).toFixed(2)}</div>
+        <div style="font-size:10px;color:${warna};font-weight:700">${status}</div>
+      </div>
+    </div>`;
+  tunjukToast('✅ ETR Negeri dikira semula. '+bilDiedit+' sekolah diedit.','success');
+}
+
+// kiraPerubahanETR dibuang — guna kiraETRSebenar() sahaja
+
 function kiraRingkasanETR() {
   const d = _etrData;
   const jumSek = d.length;
@@ -2160,6 +2287,21 @@ function kiraRingkasanETR() {
   document.getElementById('etr-k2').textContent = k[2]+' sekolah';
   document.getElementById('etr-k3').textContent = k[3]+' sekolah';
   document.getElementById('etr-k4').textContent = k[4]+' sekolah';
+
+  // Notifikasi sekolah hantar baru
+  const baruHantar = _etrData.filter(s => s.status_sekolah === 'DIHANTAR_SEKOLAH').length;
+  const disemak = _etrData.filter(s => s.status_sekolah === 'DISEMAK').length;
+  let notifEl = document.getElementById('etr-notif');
+  if (!notifEl) {
+    notifEl = document.createElement('div');
+    notifEl.id = 'etr-notif';
+    document.getElementById('etr-pct').insertAdjacentElement('afterend', notifEl);
+  }
+  notifEl.innerHTML = baruHantar || disemak ? `
+    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+      ${baruHantar ? `<span style="background:#d1fae5;color:#065f46;padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:700">✓ ${baruHantar} sekolah telah hantar sasaran</span>` : ''}
+      ${disemak ? `<span style="background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:700">📝 ${disemak} sekolah sedang mengisi</span>` : ''}
+    </div>` : '';
 
   // % gred negeri
   const totGred = {
@@ -2261,6 +2403,7 @@ function renderJadualETR() {
       <td style="font-size:11px;color:var(--sub)">${tarikhStr}</td>
       <td style="white-space:nowrap">
         <button class="btn-ghost" style="font-size:11.5px;padding:4px 10px" onclick="bukaModalETR('${s.kod_sekolah}')">✏️ Edit</button>
+        ${s.status_sekolah==='DIHANTAR_SEKOLAH'?`<button class="btn-ghost" style="font-size:11.5px;padding:4px 10px;color:var(--ok)" onclick="lihatSasaranMurid('${s.kod_sekolah}','${(s.nama_sekolah||'').replace(/'/g,'\\'')}')">👁️ Semak</button>`:''}
         ${bolehUndo?`<button class="btn-ghost" style="font-size:11.5px;padding:4px 10px;color:var(--rose)" onclick="undoHantar('${s.kod_sekolah}')">↩ Tarik Balik</button>`:''}
       </td>
     </tr>`}).join('')}</tbody>
@@ -2388,7 +2531,9 @@ async function simpanETRModal() {
     bil_cplus_semasa: x.cplus, bil_c_semasa: x.c,
     bil_d_semasa: x.d, bil_e_semasa: x.e, bil_g_semasa: x.g,
     etr_gp_semasa: gp,
-    tarikh_kemaskini: new Date().toISOString()
+    tarikh_kemaskini: new Date().toISOString(),
+    sudah_edit: true,
+    sudah_edit: true
   };
 
   const { error } = await db.from('etr_sasaran').update(upd).eq('tahun','2026').eq('kod_sekolah', s.kod_sekolah);
@@ -2659,22 +2804,30 @@ function warnaJP(list) {
   return list.map((_, i) => WARNA_JP[i % WARNA_JP.length]);
 }
 
+function sortJP(a, b) {
+  const aUp = a.toUpperCase();
+  const bUp = b.toUpperCase();
+  // Assign nilai urutan untuk sort
+  // PASA T4 XXXX → sort key: XXXX.1
+  // PPSA T5 XXXX → sort key: XXXX.2
+  // PSPM T5 XXXX → sort key: XXXX.3
+  // SPM XXXX     → sort key: XXXX.4
+  function kunci(s) {
+    const t = s.match(/\d{4}/) ? parseInt(s.match(/\d{4}/)[0]) : 0;
+    if (/PASA/.test(s))       return t + 0.1;
+    if (/PPSA/.test(s))       return t + 0.2;
+    if (/PSPM/.test(s))       return t + 0.3;
+    return t + 0.4; // SPM atau lain
+  }
+  return kunci(aUp) - kunci(bUp);
+}
+
 function renderChart1() {
   const wrap = document.getElementById('spm-jpn-chart1-wrap');
   const metrik = (document.getElementById('spm-c1-metrik') || {}).value || 'gpmp';
   if (!_filteredSpmJPN.length) { wrap.style.display = 'none'; return; }
 
-  const jpList = [...new Set(_filteredSpmJPN.map(r => r['jenis pentaksiran']))].sort((a,b) => {
-    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
-    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
-    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
-    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
-    if (tahunA !== tahunB) return tahunA - tahunB;
-    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
-    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
-    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
-    return a.localeCompare(b);
-  });
+  const jpList = [...new Set(_filteredSpmJPN.map(r => r['jenis pentaksiran']))].sort(sortJP);
   const ppdList = [...new Set(_filteredSpmJPN.map(r => r['ppd']))].sort();
 
   const datasets = jpList.map((jp, i) => {
@@ -2695,6 +2848,7 @@ function renderChart1() {
     data: { labels: ppdList.map(p => p.replace('PPD ','')), datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top' },
         datalabels: {
@@ -2723,17 +2877,7 @@ function renderChart2() {
   if (!skl) { if (_chartSekolah) { _chartSekolah.destroy(); _chartSekolah = null; } return; }
 
   const rekodSkl = _filteredSpmJPN.filter(r => r['nama sekolah'] === skl);
-  const jpList = [...new Set(rekodSkl.map(r => r['jenis pentaksiran']))].sort((a,b) => {
-    const _jpOrder = ['PENTAKSIRAN PERTENGAHAN SESI AKADEMIK','PENTAKSIRAN AKHIR SESI AKADEMIK','PERCUBAAN SPM','SPM'];
-    const _jpOrderShort = ['PPSA', 'PASA', 'PSPM', 'SPM'];
-    const tahunA = a.match(/\d{4}/) ? parseInt(a.match(/\d{4}/)[0]) : 0;
-    const tahunB = b.match(/\d{4}/) ? parseInt(b.match(/\d{4}/)[0]) : 0;
-    if (tahunA !== tahunB) return tahunA - tahunB;
-    const ai = _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) !== -1 ? _jpOrder.findIndex(o => a.includes(o) || o.includes(a)) : _jpOrderShort.findIndex(o => a.includes(o) || o.includes(a));
-    const bi = _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) !== -1 ? _jpOrder.findIndex(o => b.includes(o) || o.includes(b)) : _jpOrderShort.findIndex(o => b.includes(o) || o.includes(b));
-    if (ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
-    return a.localeCompare(b);
-  });
+  const jpList = [...new Set(rekodSkl.map(r => r['jenis pentaksiran']))].sort(sortJP);
   const nilaiList = jpList.map(jp => {
     const r = rekodSkl.find(x => x['jenis pentaksiran'] === jp);
     return r ? +r[metrik] : 0;
@@ -2748,6 +2892,7 @@ function renderChart2() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         datalabels: {

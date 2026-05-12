@@ -131,7 +131,7 @@ main { padding: 24px; max-width: 1280px; margin: 0 auto; }
 .btn-danger:hover { background: var(--rose); color: #fff; }
 
 /* ── CARD ── */
-.card { background: var(--white); border-radius: var(--r); border: 1.5px solid var(--border); box-shadow: var(--sh-s); overflow: hidden; }
+.card { background: var(--white); border-radius: var(--r); border: 1.5px solid var(--border); box-shadow: var(--sh-s); }
 .card-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .card-body { padding: 20px; }
