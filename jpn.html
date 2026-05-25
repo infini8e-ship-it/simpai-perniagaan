@@ -17,6 +17,7 @@
       <button class="nav-tab nav-drop-btn">🔬 Analisis ▾</button>
       <div class="nav-drop-menu">
         <button onclick="setTab(this,'analisis')">🔬 Analisis Negeri</button>
+        <button onclick="setTab(this,'tapak-jpn');muatTapakJPN()">📋 Tapak Sekolah</button>
         <button onclick="setTab(this,'prestasi-spm-jpn')">🏆 Sejarah Prestasi</button>
         <button onclick="setTab(this,'sasaran-etr');muatSasaranETR()">🎯 Sasaran ETR</button>
       </div>
@@ -454,6 +455,71 @@
 </div>
 
 <!-- PAGE: SASARAN ETR -->
+<div class="page" id="page-tapak-jpn">
+  <div class="sec-hd">
+    <div><div class="sec-title">Tapak Sekolah 📋</div><div class="sec-sub">Semak & kemaskini data markah dari tapak analisis guru</div></div>
+    <button class="btn-primary" id="btn-kemaskini-semua" onclick="jpnKemaskiniSemua()">🔄 Kemaskini Semua Belum Sync</button>
+  </div>
+
+  <div class="stats-row stats-4" style="margin-bottom:20px">
+    <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">📋</div></div><div class="stat-val" id="tapak-stat-jumlah">—</div><div class="stat-lbl">Jumlah Tapak</div></div>
+    <div class="stat-card sc-ro"><div class="stat-top"><div class="stat-ico">⚠️</div></div><div class="stat-val" id="tapak-stat-belum">—</div><div class="stat-lbl">Belum Sync</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="tapak-stat-belum-sub">— / —</div></div>
+    <div class="stat-card sc-cy"><div class="stat-top"><div class="stat-ico">✅</div></div><div class="stat-val" id="tapak-stat-sudah">—</div><div class="stat-lbl">Sudah Sync</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="tapak-stat-sudah-sub">— / —</div></div>
+    <div class="stat-card sc-em"><div class="stat-top"><div class="stat-ico">🕐</div></div><div class="stat-val" id="tapak-stat-hari">—</div><div class="stat-lbl">Sync Hari Ini</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:14px 20px">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <label class="form-label">Daerah</label>
+          <select class="form-select" id="tapak-filter-ppd" onchange="muatTapakJPN()">
+            <option value="">Semua Daerah</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="tapak-filter-jenis" onchange="muatTapakJPN()">
+            <option value="">Semua</option>
+            <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+            <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+            <option value="PERCUBAAN SPM">PSPM</option>
+          </select>
+        </div>
+        <div style="flex:0 0 100px">
+          <label class="form-label">Tahun</label>
+          <select class="form-select" id="tapak-filter-tahun" onchange="muatTapakJPN()">
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label class="form-label">Status Sync</label>
+          <select class="form-select" id="tapak-filter-sync" onchange="muatTapakJPN()">
+            <option value="">Semua</option>
+            <option value="belum">⚠️ Belum Sync</option>
+            <option value="sudah">✅ Sudah Sync</option>
+          </select>
+        </div>
+        <div style="flex:1.5;min-width:180px">
+          <label class="form-label">Cari Sekolah</label>
+          <input class="form-input" id="tapak-filter-cari" placeholder="Nama atau kod sekolah..." oninput="muatTapakJPN()" style="width:100%">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Senarai Tapak <span class="chip" id="tapak-jpn-count">—</span></div>
+      <button class="btn-ghost" style="font-size:13px" onclick="muatTapakJPN()">🔄 Muat Semula</button>
+    </div>
+    <div class="card-body" style="padding:0" id="tapak-jpn-body">
+      <div class="loading-wrap"><div class="spinner spinner-dark"></div></div>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-sasaran-etr">
   <div class="sec-hd">
     <div><div class="sec-title">🎯 Tetapan Sasaran Negeri SPM</div><div class="sec-sub">Edu Transformation Result (ETR) — Perniagaan SPM 2026</div></div>
@@ -985,21 +1051,21 @@ async function muatStatDashboard(){
 }
 
 async function muatDaerahStatus(){
-  const{data}=await db.from('ppd').select('kod_ppd,nama_ppd');
-  if(!data) return;
-  const rows=await Promise.all(data.map(async p=>{
-    const{count:cSkl}=await db.from('sekolah').select('*',{count:'exact',head:true}).eq('kod_ppd',p.kod_ppd).eq('status','AKTIF');
-    const{count:cMurid}=await db.from('skor_master').select('*',{count:'exact',head:true}).eq('ppd',p.nama_ppd);
-    return{ppd:p.nama_ppd,sekolah:cSkl||0,murid:cMurid||0};
-  }));
+  const{data,error}=await db.from('v_status_daerah').select('*');
+  if(!data||error) return;
   document.getElementById('daerah-body').innerHTML=`
     <table class="data-table">
-      <thead><tr><th>Daerah</th><th>Sekolah</th><th>Murid Direkod</th><th>Status</th></tr></thead>
-      <tbody>${rows.map(r=>`<tr>
-        <td style="font-weight:600">${r.ppd}</td>
-        <td style="font-family:var(--ffm)">${r.sekolah}</td>
-        <td style="font-family:var(--ffm)">${fmtN(r.murid)}</td>
-        <td><span class="sp ${r.murid>0?'sp-ok':'sp-warn'}">${r.murid>0?'✓ Ada Data':'⏳ Belum'}</span></td>
+      <thead><tr><th>Daerah</th><th>Sekolah</th><th>Tapak (Sync/Jumlah)</th><th>Murid Direkod</th><th>Status</th></tr></thead>
+      <tbody>${data.map(r=>`<tr>
+        <td style="font-weight:600">${r.nama_ppd}</td>
+        <td style="font-family:var(--ffm)">${r.bil_sekolah}</td>
+        <td style="font-family:var(--ffm)">
+          ${r.bil_sekolah_jana>0
+            ? `<span style="color:var(--teal);font-weight:600">${r.bil_sekolah_sync}</span><span style="color:var(--muted)"> / ${r.bil_sekolah_jana} sekolah</span>`
+            : '<span style="color:var(--muted)">—</span>'}
+        </td>
+        <td style="font-family:var(--ffm)">${fmtN(r.bil_murid)}</td>
+        <td><span class="sp ${r.bil_murid>0?'sp-ok':'sp-warn'}">${r.bil_murid>0?'✓ Ada Data':'⏳ Belum'}</span></td>
       </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -2963,6 +3029,166 @@ function janaJadualSpmJpn() {
   }
   el.innerHTML = '<div id="spm-table-jpn"></div>';
   renderJadualSPM(_filteredSpmJPN, 'spm-table-jpn');
+}
+
+// ================================================================
+// TAPAK SEKOLAH — JPN
+// ================================================================
+var _tapakJPNData = [];
+
+async function muatTapakJPN() {
+  const body = document.getElementById('tapak-jpn-body');
+  if (!body) return;
+  body.innerHTML = '<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+
+  const filterPPD   = (document.getElementById('tapak-filter-ppd')   || {}).value || '';
+  const filterJenis = (document.getElementById('tapak-filter-jenis') || {}).value || '';
+  const filterTahun = (document.getElementById('tapak-filter-tahun') || {}).value || '2026';
+  const filterSync  = (document.getElementById('tapak-filter-sync')  || {}).value || '';
+
+  let q = db.from('template_log')
+    .select('id, kod_sekolah, kelas, tingkatan, jenis_pentaksiran, tahun, id_spreadsheet, url_edit, perlu_sync, tarikh_sync, sekolah(nama_sekolah, kod_ppd)')
+    .eq('status', 'AKTIF')
+    .eq('tahun', filterTahun)
+    .order('kod_sekolah').order('kelas');
+
+  if (filterJenis) q = q.eq('jenis_pentaksiran', filterJenis);
+
+  const { data, error } = await q;
+  if (error) { body.innerHTML = '<div class="alert alert-warn">❌ ' + error.message + '</div>'; return; }
+
+  // Isi dropdown PPD sekali sahaja
+  const selPPD = document.getElementById('tapak-filter-ppd');
+  if (selPPD && selPPD.options.length <= 1) {
+    const ppdSet = new Set((data||[]).map(t => t.sekolah?.kod_ppd).filter(Boolean));
+    ppdSet.forEach(ppd => {
+      const o = document.createElement('option');
+      o.value = ppd;
+      o.textContent = ppd.replace('PPD_','').replace(/_/g,' ');
+      selPPD.appendChild(o);
+    });
+  }
+
+  let tapak = data || [];
+  if (filterPPD)              tapak = tapak.filter(t => t.sekolah?.kod_ppd === filterPPD);
+  if (filterSync === 'belum') tapak = tapak.filter(t => t.perlu_sync === true);
+  if (filterSync === 'sudah') tapak = tapak.filter(t => !t.perlu_sync);
+  const filterCari = ((document.getElementById('tapak-filter-cari')||{}).value||'').trim().toLowerCase();
+  if (filterCari) tapak = tapak.filter(t =>
+    (t.sekolah?.nama_sekolah||'').toLowerCase().includes(filterCari) ||
+    (t.kod_sekolah||'').toLowerCase().includes(filterCari)
+  );
+
+  _tapakJPNData = tapak;
+  document.getElementById('tapak-jpn-count').textContent = tapak.length;
+  // Stat cards — kira dari data penuh (sebelum filter sync)
+  const _semua = data || [];
+  const _belum = _semua.filter(t => t.perlu_sync === true).length;
+  const _sudah = _semua.filter(t => !t.perlu_sync).length;
+  const _hari  = _semua.filter(t => t.tarikh_sync && new Date(t.tarikh_sync).toDateString() === new Date().toDateString()).length;
+  document.getElementById('tapak-stat-jumlah').textContent = _semua.length;
+  document.getElementById('tapak-stat-belum').textContent  = _belum;
+  document.getElementById('tapak-stat-sudah').textContent  = _sudah;
+  document.getElementById('tapak-stat-hari').textContent   = _hari;
+  document.getElementById('tapak-stat-belum-sub').textContent = _belum + ' / ' + _semua.length + ' tapak';
+  document.getElementById('tapak-stat-sudah-sub').textContent = _sudah + ' / ' + _semua.length + ' tapak';
+
+  if (!tapak.length) {
+    body.innerHTML = '<div class="empty-state" style="padding:40px"><div class="ico">📋</div><p>Tiada tapak dijumpai.</p></div>';
+    return;
+  }
+
+  const kodJenisPendek = j => j === 'PENTAKSIRAN PERTENGAHAN SESI AKADEMIK' ? 'PPSA'
+    : j === 'PENTAKSIRAN AKHIR SESI AKADEMIK' ? 'PASA'
+    : j === 'PERCUBAAN SPM' ? 'PSPM' : j;
+
+  const baris = tapak.map(t => {
+    const syncBadge = t.perlu_sync
+      ? '<span class="tag tag-warn" style="font-size:11px">⚠️ Belum Sync</span>'
+      : '<span class="tag tag-aktif" style="font-size:11px">✅ Sudah Sync</span>';
+    const tarikhSync = t.tarikh_sync
+      ? new Date(t.tarikh_sync).toLocaleDateString('ms-MY', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+      : '—';
+    const namaSkl = t.sekolah?.nama_sekolah || t.kod_sekolah;
+    const ppd = (t.sekolah?.kod_ppd || '').replace('PPD_','').replace(/_/g,' ');
+    return `<tr>
+      <td style="width:32px;text-align:center;color:var(--muted);font-size:12px">${tapak.indexOf(t)+1}</td>
+      <td><div style="font-weight:600;font-size:13px">${namaSkl}</div><div style="font-size:11px;color:var(--muted)">${t.kod_sekolah} · ${ppd}</div></td>
+      <td style="white-space:nowrap"><span style="background:var(--bg);padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600">T${t.tingkatan}</span> <span style="font-size:13px">${t.kelas}</span></td>
+      <td style="text-align:center"><span style="background:var(--bg);padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600">${kodJenisPendek(t.jenis_pentaksiran)}</span></td>
+      <td style="text-align:center">${syncBadge}</td>
+      <td style="font-size:11px;color:var(--muted);white-space:nowrap">${tarikhSync}</td>
+      <td style="white-space:nowrap"><div style="display:flex;gap:6px;justify-content:flex-end;padding-right:16px">
+        <a href="${t.url_edit}" target="_blank" class="btn-ghost" style="font-size:12px;padding:5px 10px;border-radius:6px;text-decoration:none;white-space:nowrap">📝 Buka</a>
+        <button class="btn-primary" style="font-size:12px;padding:5px 12px;white-space:nowrap" onclick="jpnDoKemaskini(${t.id},this)">🔄 Kemaskini</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<div class="tbl-wrap"><table style="width:100%" class="data-table">
+    <tr><th style="width:40px;text-align:center">#</th><th style="text-align:left">Sekolah</th><th style="text-align:left">Kelas</th><th style="text-align:center">Jenis</th><th style="text-align:center">Status</th><th style="text-align:left">Sync Terakhir</th><th style="text-align:right;padding-right:16px">Tindakan</th></tr>
+    ${baris}
+  </table></div>`;
+}
+
+async function jpnDoKemaskini(tapakId, btn) {
+  const tapak = _tapakJPNData.find(t => t.id === tapakId);
+  if (!tapak) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
+  try {
+    const url = GAS_URL
+      + '?action=sync'
+      + '&ssId='             + encodeURIComponent(tapak.id_spreadsheet)
+      + '&kodSekolah='       + encodeURIComponent(tapak.kod_sekolah)
+      + '&namaSekolah='      + encodeURIComponent(tapak.sekolah?.nama_sekolah || tapak.kod_sekolah)
+      + '&ppd='              + encodeURIComponent(tapak.sekolah?.kod_ppd || '')
+      + '&tingkatan='        + encodeURIComponent(tapak.tingkatan)
+      + '&kelas='            + encodeURIComponent(tapak.kelas)
+      + '&jenisPentaksiran=' + encodeURIComponent(tapak.jenis_pentaksiran)
+      + '&tahun='            + encodeURIComponent(tapak.tahun);
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (json.ok) {
+      tunjukToast('✅ ' + tapak.kelas + ' — ' + json.jumlah + ' murid dikemaskini.', 'success');
+      await muatTapakJPN();
+    } else {
+      tunjukToast('❌ ' + (json.mesej || 'Gagal.'), 'error');
+      btn.disabled = false; btn.textContent = '🔄 Kemaskini';
+    }
+  } catch(e) {
+    tunjukToast('❌ ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = '🔄 Kemaskini';
+  }
+}
+
+async function jpnKemaskiniSemua() {
+  const belumSync = _tapakJPNData.filter(t => t.perlu_sync === true);
+  if (!belumSync.length) { tunjukToast('✅ Semua tapak sudah dikemaskini.', 'success'); return; }
+  const btn = document.getElementById('btn-kemaskini-semua');
+  btn.disabled = true; btn.textContent = '⏳ Sedang kemaskini...';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
+  let berjaya = 0, gagal = 0;
+  for (const tapak of belumSync) {
+    try {
+      const url = GAS_URL
+        + '?action=sync'
+        + '&ssId='             + encodeURIComponent(tapak.id_spreadsheet)
+        + '&kodSekolah='       + encodeURIComponent(tapak.kod_sekolah)
+        + '&namaSekolah='      + encodeURIComponent(tapak.sekolah?.nama_sekolah || tapak.kod_sekolah)
+        + '&ppd='              + encodeURIComponent(tapak.sekolah?.kod_ppd || '')
+        + '&tingkatan='        + encodeURIComponent(tapak.tingkatan)
+        + '&kelas='            + encodeURIComponent(tapak.kelas)
+        + '&jenisPentaksiran=' + encodeURIComponent(tapak.jenis_pentaksiran)
+        + '&tahun='            + encodeURIComponent(tapak.tahun);
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (json.ok) berjaya++; else gagal++;
+    } catch(e) { gagal++; }
+  }
+  btn.disabled = false; btn.textContent = '🔄 Kemaskini Semua Belum Sync';
+  tunjukToast('✅ Selesai — ' + berjaya + ' berjaya' + (gagal ? ', ' + gagal + ' gagal' : '') + '.', berjaya > 0 ? 'success' : 'error');
+  await muatTapakJPN();
 }
 
 </script>
