@@ -14,6 +14,7 @@
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">🏠 Dashboard</button>
     <button class="nav-tab" onclick="setTab(this,'murid');resetViewMurid()">👥 Senarai Murid</button>
     <button class="nav-tab" onclick="setTab(this,'tapak')">📋 Tapak</button>
+    <button class="nav-tab" onclick="setTab(this,'api-key');semakApiKeyJPN()">🔑 API Key AI</button>
     <div class="nav-dropdown">
       <button class="nav-tab nav-drop-btn">📊 Analisis ▾</button>
       <div class="nav-drop-menu">
@@ -74,6 +75,22 @@
 </div>
 
 <!-- TAPAK ANALISIS -->
+<div class="page" id="page-api-key">
+  <div class="sec-hd">
+    <div><div class="sec-title">API Key Gemini 🔑</div><div class="sec-sub">Wajib diisi untuk guna ciri Cadang Intervensi AI</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">🔑 API Key Gemini Anda</div></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Dapatkan API Key percuma di <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>. Key anda disimpan secara peribadi dan tidak dikongsi.</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" class="form-input" id="rai-mykey" placeholder="AIzaSy..." style="flex:1">
+        <button class="btn-primary" onclick="simpanApiKeyJPN()">💾 Simpan</button>
+      </div>
+      <div id="rai-key-status" style="margin-top:8px;font-size:12px"></div>
+    </div>
+  </div>
+</div>
 <div class="page" id="page-tapak">
   <div class="sec-hd">
     <div><div class="sec-title">Tapak Analisis 📋</div><div class="sec-sub">Urus tapak Google Sheets markah murid</div></div>
@@ -271,6 +288,13 @@
 
 </main>
 <div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal-intervensi-ai">
+  <div class="modal-box" style="max-width:720px;width:95vw">
+    <div class="modal-head"><div class="modal-title" id="ia-judul">🤖 Pelan Intervensi AI</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body" id="ia-body" style="max-height:65vh;overflow-y:auto"></div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Tutup</button><button class="btn-primary" id="ia-btn-cetak" style="display:none" onclick="cetakIntervensiAI()">🖨️ Cetak PDF</button></div>
+  </div>
+</div>
 
 <!-- MODAL KONFIRMASI -->
 <div class="modal-overlay" id="modal-konfirm">

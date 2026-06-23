@@ -171,6 +171,13 @@
 
 </main>
 <div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal-intervensi-ai">
+  <div class="modal-box" style="max-width:720px;width:95vw">
+    <div class="modal-head"><div class="modal-title" id="ia-judul">🤖 Pelan Intervensi AI</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body" id="ia-body" style="max-height:65vh;overflow-y:auto"></div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Tutup</button><button class="btn-primary" id="ia-btn-cetak" style="display:none" onclick="cetakIntervensiAI()">🖨️ Cetak PDF</button></div>
+  </div>
+</div>
 
 <!-- MODAL TAMBAH PENGGUNA -->
 <div class="modal-overlay" id="modal-user">
@@ -199,6 +206,7 @@
 <script src="app.js"></script>
 <script src="analisis.js"></script>
 <script>
+var GAS_URL='https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
 var _ppdNama='';
 
 window.addEventListener('load',async()=>{

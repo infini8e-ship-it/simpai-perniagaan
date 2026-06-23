@@ -137,7 +137,7 @@ async function muatAnalisisSupa(params, peranan, elId) {
 
     // Simpan spider data
     _simpanSpiderData(hasil.senaraiMurid, hasil.soalanK1, hasil.topik);
-
+    window._anaCache = { topik: hasil.topik, soalanK2: hasil.soalanK2, peranan: peranan, params: params };
     // Aktifkan tab pertama
     _aktivasiTab('an-topik');
 
@@ -417,6 +417,7 @@ function _renderAnalisis(d, params, peranan) {
     
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">' +
+    '<button class="btn-primary" onclick="mintaIntervensiAI()">🤖 Cadang Intervensi AI</button>' +
     '<button class="btn-ghost" onclick="cetakAnalisis(\'Analisis SIMP-Ai\')">🖨️ Cetak</button>' +
     '</div>';
 
@@ -930,4 +931,134 @@ function cetakAnalisis(tajuk) {
   printWin.document.write('</body></html>');
   printWin.document.close();
   setTimeout(function(){ printWin.print(); }, 600);
+}
+async function mintaIntervensiAI(){
+  if(!window._anaCache || !window._anaCache.topik || !window._anaCache.topik.length){
+    tunjukToast('⚠️ Sila jana analisis dahulu.','warn');return;
+  }
+  var topikLemah = window._anaCache.topik.slice(0,5);
+  var spLemah = topikLemah.map(function(t){return t.topik;}).filter(function(s){return s && s!=='—';});
+  if(!spLemah.length){tunjukToast('⚠️ Tiada data SP untuk dianalisis.','warn');return;}
+
+  var k2Data = window._anaCache.soalanK2 || [];
+  var k2Relevan = k2Data.filter(function(s){
+    return s.sp && s.sp.some(function(x){ return spLemah.indexOf(x.kod)>-1; });
+  });
+  if(!k2Relevan.length && k2Data.length){
+    k2Relevan = k2Data.slice().sort(function(a,b){return a.peratus-b.peratus;}).slice(0,3);
+  }
+  var k2Teks = k2Relevan.length ? k2Relevan.map(function(s){
+    return 'Soalan '+s.soalan+' (Bahagian '+s.bahagian+', SP:'+(s.sp.map(function(x){return x.kod;}).join(',')||'-')+'): '+s.peratus+'% pencapaian, purata '+s.purata+'/'+s.maks;
+  }).join('; ') : 'Tiada data Kertas 2 untuk SP ini.';
+
+  var peranan = window._anaCache.peranan;
+  var params = window._anaCache.params||{};
+  var labelPeringkat = 'SIMP-Ai';
+  if(peranan==='SEKOLAH') labelPeringkat=(STATE.namaSekolah||'Sekolah')+(params.kelas?' - '+params.kelas:'');
+  else if(peranan==='PPD'||peranan==='JU_DAERAH') labelPeringkat='PPD '+(STATE.ppd||'');
+  else labelPeringkat = params.sekolah || params.ppd || 'Negeri Kedah';
+
+  var skopBahagian = [];
+  if(params.tingkatan) skopBahagian.push('Tingkatan '+params.tingkatan);
+  if(params.jenisPentaksiran) skopBahagian.push(params.jenisPentaksiran);
+  if(params.tahun) skopBahagian.push('Tahun '+params.tahun);
+  var skopLokasi;
+  if(peranan==='SEKOLAH') skopLokasi=(STATE.namaSekolah||'Sekolah')+(params.kelas?' Kelas '+params.kelas:'');
+  else if(params.sekolah) skopLokasi='Sekolah '+params.sekolah;
+  else if(params.ppd) skopLokasi='PPD '+params.ppd;
+  else if(peranan==='PPD'||peranan==='JU_DAERAH') skopLokasi='PPD '+(STATE.ppd||'');
+  else skopLokasi='Seluruh Negeri Kedah (semua sekolah & PPD, tiada penapis)';
+  var ayatSkop = (skopBahagian.length?skopBahagian.join(', ')+', ':'')+skopLokasi;
+
+  var k2Lengkap = '';
+  if(k2Data.length){
+    var byBahagian = {};
+    k2Data.forEach(function(s){
+      var b = s.bahagian||'-';
+      if(!byBahagian[b]) byBahagian[b]=[];
+      byBahagian[b].push('S'+s.soalan+' (SP:'+(s.sp.map(function(x){return x.kod;}).join(',')||'-')+'): '+s.peratus+'%, '+s.bilanganMurid+' murid');
+    });
+    k2Lengkap = Object.keys(byBahagian).sort().map(function(b){
+      return 'Bahagian '+b+' — '+byBahagian[b].join('; ');
+    }).join(' || ');
+  }
+
+  var infoAnalisis = 'Skop Analisis: '+ayatSkop+'. 5 SP Terlemah (Kertas 1): '+topikLemah.map(function(t){return t.topik+' ('+t.peratus+'%)';}).join(', ')+'. DATA PENUH Kertas 2 ikut Bahagian: '+(k2Lengkap||'Tiada data K2.');
+
+  document.getElementById('ia-judul').textContent='🤖 Menjana Pelan Intervensi — '+labelPeringkat;
+  document.getElementById('ia-body').innerHTML='<div style="text-align:center;padding:30px"><div class="spinner spinner-dark"></div><p style="margin-top:12px;color:var(--sub)">Gemini sedang merangka strategi...</p></div>';
+  document.getElementById('ia-btn-cetak').style.display='none';
+  bukaModal('modal-intervensi-ai');
+
+  try{
+    var spK2Semua = [];
+  k2Data.forEach(function(s){ (s.sp||[]).forEach(function(x){ if(x.kod && spK2Semua.indexOf(x.kod)===-1) spK2Semua.push(x.kod); }); });
+  var spGabung = spLemah.concat(spK2Semua.filter(function(s){ return spLemah.indexOf(s)===-1; }));
+
+  var qs=new URLSearchParams({
+    action:'jana_intervensi_ai', idPengguna:STATE.id,
+    labelPeringkat:labelPeringkat, spLemah:spGabung.join(','), infoAnalisis:infoAnalisis
+  });
+    var res=await fetch(GAS_URL+'?'+qs.toString());
+    var hasil=await res.json();
+    if(hasil.ok){
+      document.getElementById('ia-judul').textContent='💡 Pelan Intervensi AI — '+labelPeringkat;
+      document.getElementById('ia-body').innerHTML=
+        '<style>#ia-content h3{margin-top:18px;margin-bottom:8px;color:var(--indigo)}'+
+        '#ia-content h3:first-child{margin-top:0}'+
+        '#ia-content h4{margin-top:14px;margin-bottom:6px}'+
+        '#ia-content p{margin-bottom:12px;line-height:1.7}'+
+        '#ia-content ul,#ia-content ol{margin-left:20px;margin-bottom:14px}'+
+        '#ia-content li{margin-bottom:6px;line-height:1.6}</style>'+
+        '<div class="ai-content" id="ia-content">'+hasil.html+'</div>';
+      document.getElementById('ia-btn-cetak').style.display='inline-block';
+      window._iaLabel = labelPeringkat;
+    } else {
+      document.getElementById('ia-body').innerHTML='<div class="alert alert-err">❌ '+hasil.mesej+'</div>';
+    }
+  }catch(e){
+    document.getElementById('ia-body').innerHTML='<div class="alert alert-err">❌ Ralat: '+e.message+'</div>';
+  }
+}
+
+function cetakIntervensiAI(){
+  var content=document.getElementById('ia-content');
+  if(!content){tunjukToast('⚠️ Tiada kandungan.','warn');return;}
+  var w=window.open('','_blank');
+  var tarikh=new Date().toLocaleDateString('ms-MY',{day:'2-digit',month:'long',year:'numeric'});
+  w.document.write('<html><head><title>Pelan Intervensi AI</title><style>'+
+    'body{font-family:Arial,sans-serif;color:#0d2137;padding:40px;line-height:1.6}'+
+    '.hd{border-bottom:3px solid #1a3c5e;margin-bottom:20px;padding-bottom:12px;text-align:center}'+
+    '.hd h2{margin:0;color:#1a3c5e}.hd h1{margin:6px 0 0;font-size:16px;color:#2d7dd2;text-transform:uppercase}'+
+    'h3{color:#2d7dd2}h4{color:#0d2137}p{text-align:justify}'+
+    '@media print{button{display:none}}'+
+    '</style></head><body>'+
+    '<div class="hd"><h2>JABATAN PENDIDIKAN NEGERI KEDAH</h2><h1>Laporan Pelan Intervensi — '+(window._iaLabel||'')+'</h1>'+
+    '<p style="font-size:12px;color:#666">Disediakan oleh: '+(STATE.nama||'')+' | Tarikh: '+tarikh+'</p></div>'+
+    content.innerHTML+
+    '<div style="margin-top:30px;font-size:10px;color:#999;text-align:center;border-top:1px solid #eee;padding-top:8px">Dijana oleh Sistem SIMP-Ai & Gemini AI.</div>'+
+    '<script>setTimeout(function(){window.print();},500);</'+'script>'+
+    '</body></html>');
+  w.document.close();
+}
+async function simpanApiKeyJPN(){
+  const key=document.getElementById('rai-mykey').value.trim();
+  if(!key){tunjukToast('⚠️ Sila isi API Key.','warn');return;}
+  const params=new URLSearchParams({action:'simpan_api_key',idPengguna:STATE.id,apiKey:key});
+  const res=await fetch(GAS_URL+'?'+params.toString());
+  const hasil=await res.json();
+  if(hasil.ok){
+    tunjukToast('✅ '+hasil.mesej,'success');
+    document.getElementById('rai-mykey').value='';
+    document.getElementById('rai-key-status').innerHTML='✅ API Key berjaya disimpan!';
+    semakApiKeyJPN();
+  }
+  else tunjukToast('❌ '+hasil.mesej,'error');
+}
+async function semakApiKeyJPN(){
+  const params=new URLSearchParams({action:'semak_api_key',idPengguna:STATE.id});
+  const res=await fetch(GAS_URL+'?'+params.toString());
+  const hasil=await res.json();
+  const el=document.getElementById('rai-key-status');
+  if(el) el.innerHTML = hasil.ada ? '✅ API Key tersimpan: <code>'+hasil.masked+'</code>' : '⚠️ Belum ada API Key disimpan.';
 }

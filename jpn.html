@@ -28,6 +28,7 @@
       <div class="nav-drop-menu">
         <button onclick="setTab(this,'tetapan')">⚙️ Tetapan SP</button>
         <button onclick="setTab(this,'simulasi')">🧪 Simulasi</button>
+        <button onclick="setTab(this,'rujukan-ai');muatRujukanAI()">🤖 Rujukan AI</button>
       </div>
     </div>
   </div>
@@ -355,6 +356,46 @@
   <div class="card" style="margin-top:16px">
     <div class="card-head"><div class="card-title">📋 Rekod Simulasi Aktif <span class="chip" id="sim-count">—</span></div><button class="btn-ghost" onclick="muatRekodSimulasi()">🔄</button></div>
     <div class="card-body" style="padding:0" id="sim-rekod-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+  </div>
+</div>
+<!-- RUJUKAN AI -->
+<div class="page" id="page-rujukan-ai">
+  <div class="sec-hd">
+    <div><div class="sec-title">Rujukan AI 🤖</div><div class="sec-sub">Ekstrak DSKP/Buku Teks/Soalan untuk Intervensi AI</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title">🔑 API Key Gemini Anda</div></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Setiap pengguna wajib guna API Key sendiri (percuma di <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>).</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="password" class="form-input" id="rai-mykey" placeholder="AIzaSy..." style="flex:1">
+        <button class="btn-primary" onclick="simpanApiKeyJPN()">💾 Simpan</button>
+      </div>
+      <div id="rai-key-status" style="margin-top:8px;font-size:12px"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div class="card-title">📤 Ekstrak Rujukan Baharu</div></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="rai-tingkatan"><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select></div>
+        <div class="form-group"><label class="form-label">Kategori</label>
+          <select class="form-select" id="rai-kategori">
+            <option value="BUKU_TEKS">Buku Teks</option><option value="SOALAN">Set Soalan</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Label (pilihan)</label>
+          <input class="form-input" id="rai-label" placeholder="Cth: PPSA 2026 K1"></div>
+        <div class="form-group"><label class="form-label">Google Drive File ID (PDF)</label>
+          <input class="form-input" id="rai-fileid" placeholder="ID fail PDF"></div>
+      </div>
+      <button class="btn-primary" style="margin-top:10px" onclick="ekstrakRujukanAI()">⚡ Mula Ekstrak</button>
+      <div id="rai-status" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">📋 Senarai Rujukan <span class="chip" id="rai-count">—</span></div><button class="btn-ghost" onclick="muatRujukanAI()">🔄</button></div>
+    <div class="card-body" style="padding:0" id="rai-tbl-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
   </div>
 </div>
 <!-- SEJARAH PRESTASI SPM JPN -->
@@ -822,6 +863,13 @@ async function lihatSasaranMurid(kod) {
       <button class="btn-ghost" onclick="tutupModal()">Batal</button>
       <button id="konfirm-btn" class="btn-danger" onclick="_konfirmExec()">Sahkan</button>
     </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-intervensi-ai">
+  <div class="modal-box" style="max-width:720px;width:95vw">
+    <div class="modal-head"><div class="modal-title" id="ia-judul">🤖 Pelan Intervensi AI</div><button class="modal-close" onclick="tutupModal()">✕</button></div>
+    <div class="modal-body" id="ia-body" style="max-height:65vh;overflow-y:auto"></div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="tutupModal()">Tutup</button><button class="btn-primary" id="ia-btn-cetak" style="display:none" onclick="cetakIntervensiAI()">🖨️ Cetak PDF</button></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1458,6 +1506,66 @@ async function doPadamSimulasi(){
     btn.disabled=false;
     btn.textContent='🗑 Padam Simulasi';
   }
+  });
+}
+async function simpanApiKeyJPN(){
+  const key=document.getElementById('rai-mykey').value.trim();
+  if(!key){tunjukToast('⚠️ Sila isi API Key.','warn');return;}
+  const params=new URLSearchParams({action:'simpan_api_key',idPengguna:STATE.id,apiKey:key});
+  const res=await fetch(GAS_URL+'?'+params.toString());
+  const hasil=await res.json();
+  if(hasil.ok){
+    tunjukToast('✅ '+hasil.mesej,'success');
+    document.getElementById('rai-mykey').value='';
+    document.getElementById('rai-key-status').innerHTML='✅ API Key berjaya disimpan!';
+    semakApiKeyJPN();
+  }
+  else tunjukToast('❌ '+hasil.mesej,'error');
+}
+async function semakApiKeyJPN(){
+  const params=new URLSearchParams({action:'semak_api_key',idPengguna:STATE.id});
+  const res=await fetch(GAS_URL+'?'+params.toString());
+  const hasil=await res.json();
+  const el=document.getElementById('rai-key-status');
+  el.innerHTML = hasil.ada ? '✅ API Key tersimpan: <code>'+hasil.masked+'</code>' : '⚠️ Belum ada API Key disimpan.';
+}
+async function ekstrakRujukanAI(){
+  const fileId=document.getElementById('rai-fileid').value.trim();
+  if(!fileId){tunjukToast('⚠️ Sila isi File ID.','warn');return;}
+  const statusEl=document.getElementById('rai-status');
+  statusEl.innerHTML='<div class="loading-wrap"><div class="spinner spinner-dark"></div> Sedang mengekstrak...</div>';
+  const params=new URLSearchParams({
+    action:'ekstrak_rujukan_ai', idPengguna:STATE.id, fileId:fileId,
+    kategori:document.getElementById('rai-kategori').value,
+    tingkatan:document.getElementById('rai-tingkatan').value,
+    label:document.getElementById('rai-label').value.trim()
+  });
+  try{
+    const res=await fetch(GAS_URL+'?'+params.toString());
+    const hasil=await res.json();
+    if(hasil.ok){statusEl.innerHTML='<div class="alert alert-success">✅ '+hasil.mesej+'</div>';document.getElementById('rai-fileid').value='';muatRujukanAI();}
+    else statusEl.innerHTML='<div class="alert alert-err">❌ '+hasil.mesej+'</div>';
+  }catch(e){statusEl.innerHTML='<div class="alert alert-err">❌ '+e.message+'</div>';}
+}
+async function muatRujukanAI(){
+  semakApiKeyJPN();
+  const body=document.getElementById('rai-tbl-body');
+  const params=new URLSearchParams({action:'get_rujukan_ai'});
+  const res=await fetch(GAS_URL+'?'+params.toString());
+  const hasil=await res.json();
+  if(!hasil.ok||!hasil.data.length){body.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Tiada rekod.</div>';document.getElementById('rai-count').textContent='0';return;}
+  document.getElementById('rai-count').textContent=hasil.data.length;
+  body.innerHTML='<table class="data-table" style="width:100%"><thead><tr><th>SP</th><th>Bab</th><th>Kategori</th><th></th></tr></thead><tbody>'+
+    hasil.data.map(d=>'<tr><td>'+d.sp_kod+' (T'+d.tingkatan+')</td><td>'+d.tajuk_bab+'</td><td>'+d.kategori+'</td><td><button class="btn-danger btn-sm" onclick="padamRujukanAI('+d.id+')">🗑</button></td></tr>').join('')+
+    '</tbody></table>';
+}
+async function padamRujukanAI(id){
+  bukaKonfirm('Padam Rujukan','Padam rekod rujukan ini?',null,'Ya, Padam','danger',async()=>{
+    const params=new URLSearchParams({action:'padam_rujukan_ai',idPengguna:STATE.id,id:id});
+    const res=await fetch(GAS_URL+'?'+params.toString());
+    const hasil=await res.json();
+    if(hasil.ok){tunjukToast('✅ '+hasil.mesej,'success');muatRujukanAI();}
+    else tunjukToast('❌ '+hasil.mesej,'error');
   });
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)tutupModal();}));
