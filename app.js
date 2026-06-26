@@ -29,7 +29,7 @@ async function semakSession(perlukan) {
     STATE = JSON.parse(saved);
     if (!STATE.id || !STATE.peranan) { window.location.href = 'login.html'; return false; }
     // Semak peranan betul untuk halaman ini
-    if (perlukan && STATE.peranan !== perlukan) {
+    if (perlukan && STATE.peranan !== perlukan && STATE.peranan !== 'JPN') {
       window.location.href = ROUTE[STATE.peranan] || 'login.html';
       return false;
     }
