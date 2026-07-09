@@ -89,7 +89,7 @@ async function muatAnalisisSupa(params, peranan, elId) {
 
     // RBAC
     if (peranan === 'SEKOLAH')                         q = q.eq('kod_sekolah', STATE.kodSekolah);
-    else if (peranan === 'PPD' || peranan === 'JU_DAERAH') q = q.eq('ppd', STATE.ppd);
+    else if (peranan === 'PPD' || peranan === 'JU_DAERAH') { q = q.eq('ppd', STATE.ppd); if (params.sekolah) q = q.eq('kod_sekolah', params.sekolah); }
     else if (params.sekolah)                           q = q.eq('kod_sekolah', params.sekolah);
     else if (params.ppd)                               q = q.eq('ppd', params.ppd);
 
