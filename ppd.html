@@ -12,6 +12,14 @@
   <a class="nav-brand" href="ppd.html"><div class="nav-logo">S</div><div class="nav-title">SIMP<span>-Ai: PERNIAGAAN</span></div></a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="setTab(this,'dashboard')">📊 Dashboard</button>
+    <div class="nav-dropdown">
+      <button class="nav-tab nav-drop-btn">📋 Pemantauan ▾</button>
+      <div class="nav-drop-menu">
+        <button onclick="setTab(this,'pengisian');muatPengisian()">📋 Status Pengisian</button>
+        <button onclick="setTab(this,'thrisiko');muatTHRisiko()">⚠️ TH &amp; Berisiko</button>
+        <button onclick="setTab(this,'banding');muatBanding()">📈 Perbandingan Pentaksiran</button>
+      </div>
+    </div>
     <button class="nav-tab" onclick="setTab(this,'sekolah')">🏫 Sekolah</button>
     <button class="nav-tab" onclick="setTab(this,'pengguna')">👥 Pengguna</button>
     <div class="nav-dropdown">
@@ -35,7 +43,7 @@
 <div class="page show" id="page-dashboard">
   <div class="sec-hd">
     <div><div class="sec-title" id="greeting">Dashboard PPD 🏢</div><div class="sec-sub" id="dash-sub">Memuatkan...</div></div>
-    <button class="btn-primary" onclick="setTab(document.querySelector('[onclick*=analisis]'),'analisis')">🔬 Analisis Daerah</button>
+    <button class="btn-primary" onclick="setTabMobile('pengisian');muatPengisian()">📋 Status Pengisian</button>
   </div>
   <div class="stats-row stats-3">
     <div class="stat-card sc-in"><div class="stat-top"><div class="stat-ico">🏫</div></div><div class="stat-val" id="s-sekolah">—</div><div class="stat-lbl">Sekolah Dalam Daerah</div></div>
@@ -46,6 +54,101 @@
     <div class="card-head"><div class="card-title">🏫 Status Kemaskini Sekolah</div><button class="btn-ghost" onclick="muatStatusSync()">🔄</button></div>
     <div class="card-body" style="padding:0" id="sync-body"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
   </div>
+</div>
+
+<!-- STATUS PENGISIAN SEKOLAH -->
+<div class="page" id="page-pengisian">
+  <div class="sec-hd">
+    <div><div class="sec-title">Status Pengisian Sekolah 📋</div><div class="sec-sub" id="pg-sub">Pantau kemajuan pengisian markah setiap sekolah</div></div>
+    <button class="btn-ghost" onclick="muatPengisian()">🔄 Muat Semula</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-3">
+        <div class="form-group"><label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="pg-jenis" onchange="muatPengisian()">
+            <option value="">Semua</option>
+            <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+            <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+            <option value="PERCUBAAN SPM">PSPM</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="pg-ting" onchange="muatPengisian()">
+            <option value="">Semua</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tahun</label>
+          <select class="form-select" id="pg-tahun" onchange="muatPengisian()"><option value="2026">2026</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="stats-row stats-3" id="pg-stats" style="display:none">
+    <div class="stat-card sc-em"><div class="stat-top"><div class="stat-ico">✅</div></div><div class="stat-val" id="pg-siap">—</div><div class="stat-lbl">Sekolah Lengkap</div></div>
+    <div class="stat-card sc-am"><div class="stat-top"><div class="stat-ico">⏳</div></div><div class="stat-val" id="pg-separa">—</div><div class="stat-lbl">Separa / Dalam Proses</div></div>
+    <div class="stat-card sc-ro"><div class="stat-top"><div class="stat-ico">❌</div></div><div class="stat-val" id="pg-belum">—</div><div class="stat-lbl">Belum Mula</div></div>
+  </div>
+  <div id="pengisian-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+</div>
+
+<!-- TH & BERISIKO -->
+<div class="page" id="page-thrisiko">
+  <div class="sec-hd">
+    <div><div class="sec-title">TH &amp; Murid Berisiko ⚠️</div><div class="sec-sub">Tidak hadir, masalah 3M dan gred E/G dalam daerah</div></div>
+    <button class="btn-ghost" onclick="muatTHRisiko()">🔄 Muat Semula</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-3">
+        <div class="form-group"><label class="form-label">Jenis Pentaksiran</label>
+          <select class="form-select" id="tr-jenis" onchange="muatTHRisiko()">
+            <option value="">Semua</option>
+            <option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option>
+            <option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option>
+            <option value="PERCUBAAN SPM">PSPM</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="tr-ting" onchange="muatTHRisiko()">
+            <option value="">Semua</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Isu</label>
+          <select class="form-select" id="tr-isu" onchange="muatTHRisiko()">
+            <option value="">Semua Isu</option>
+            <option value="TH">Tidak Hadir</option>
+            <option value="3M">Masalah 3M</option>
+            <option value="EG">Gred E/G</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="thrisiko-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
+</div>
+
+<!-- PERBANDINGAN PENTAKSIRAN -->
+<div class="page" id="page-banding">
+  <div class="sec-hd">
+    <div><div class="sec-title">Perbandingan Pentaksiran 📈</div><div class="sec-sub">Trend GPMP setiap sekolah merentas pentaksiran</div></div>
+    <button class="btn-ghost" onclick="muatBanding()">🔄 Muat Semula</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Tingkatan</label>
+          <select class="form-select" id="bd-ting" onchange="muatBanding()">
+            <option value="">Semua</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tahun</label>
+          <select class="form-select" id="bd-tahun" onchange="muatBanding()"><option value="2026">2026</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="banding-result"><div class="loading-wrap"><div class="spinner spinner-dark"></div></div></div>
 </div>
 
 <!-- SEKOLAH DAERAH -->
@@ -68,7 +171,7 @@
 
 <!-- ANALISIS DAERAH -->
 <div class="page" id="page-analisis">
-  <div class="sec-hd"><div><div class="sec-title">Analisis Daerah 🔬</div></div></div>
+  <div class="sec-hd"><div><div class="sec-title">Analisis Daerah 🔬</div><div class="sec-sub">Analisis item penuh — sekolah dalam daerah anda sahaja</div></div></div>
   <div class="sub-tabs" style="margin-bottom:16px">
     <button class="sub-tab active" id="ppd-stab-item" onclick="setPPDSubTab('item')">🔬 Analisis Item</button>
     <button class="sub-tab" id="ppd-stab-prestasi" onclick="setPPDSubTab('prestasi')">🏆 Sejarah Prestasi</button>
@@ -79,12 +182,16 @@
       <div class="form-grid form-grid-3">
         <div class="form-group"><label class="form-label">Tingkatan</label><select class="form-select" id="af-ting"><option value="">Semua</option><option value="4">T4</option><option value="5">T5</option></select></div>
         <div class="form-group"><label class="form-label">Jenis</label><select class="form-select" id="af-jenis"><option value="">Semua</option><option value="PENTAKSIRAN PERTENGAHAN SESI AKADEMIK">PPSA</option><option value="PENTAKSIRAN AKHIR SESI AKADEMIK">PASA</option><option value="PERCUBAAN SPM">PSPM</option></select></div>
-        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option><option value="2025">2025</option></select></div>
+        <div class="form-group"><label class="form-label">Tahun</label><select class="form-select" id="af-tahun"><option value="2026">2026</option></select></div>
       </div>
-      <div class="form-grid form-grid-2" style="margin-top:12px">
+      <div class="form-grid form-grid-3" style="margin-top:12px">
         <div class="form-group">
           <label class="form-label">Sekolah (pilihan)</label>
-          <select class="form-select" id="af-sekolah"><option value="">Semua Sekolah</option></select>
+          <select class="form-select" id="af-sekolah" onchange="muatKelasAnalisis()"><option value="">Semua Sekolah</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kelas (pilihan)</label>
+          <select class="form-select" id="af-kelas"><option value="">Semua Kelas</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Cari Sekolah</label>
@@ -128,8 +235,6 @@
         <div class="form-group"><label class="form-label">Tahun</label>
           <select class="form-select" id="pd-tahun">
             <option value="2026">2026</option>
-            <option value="2027">2027</option>
-            <option value="2028">2028</option>
           </select>
         </div>
         <div class="form-group form-full"><label class="form-label">Sekolah (pilihan)</label>
@@ -208,6 +313,7 @@
 <script>
 var GAS_URL='https://script.google.com/macros/s/AKfycbxBBjCdiTImsIF5CS6w1b5SyqveEMSKCA69SNn4Ht7b-6iei7vsQcqWSq9kZXFftpPuNQ/exec';
 var _ppdNama='';
+var _sklDaerah=[];
 
 window.addEventListener('load',async()=>{
   const ok=await semakSession('PPD'); if(!ok) return;
@@ -216,7 +322,8 @@ window.addEventListener('load',async()=>{
   document.getElementById('greeting').textContent=salamMasa()+', '+STATE.nama.split(' ')[0]+' 🏢';
   document.getElementById('dash-sub').textContent=_ppdNama+' · Sesi 2026';
   document.getElementById('nav-badge').textContent=_ppdNama||'PPD';
-  await Promise.all([muatStat(),muatStatusSync(),muatSekolahDaerah(),muatPenggunaDaerah()]);
+  await muatSekolahDaerah();
+  await Promise.all([muatStat(),muatStatusSync(),muatPenggunaDaerah()]);
 });
 
 function _ppdKod(){return 'PPD_'+(_ppdNama||'').replace('PPD ','').replace(/ /g,'_').toUpperCase();}
@@ -232,13 +339,12 @@ async function muatStat(){
   document.getElementById('s-risiko').textContent=fmtN(cRisiko);
 }
 
+// Dashboard: status ringkas guna view (1 query, bukan 1 query/sekolah)
 async function muatStatusSync(){
-  const{data:sklList}=await db.from('sekolah').select('kod_sekolah,nama_sekolah').eq('kod_ppd',_ppdKod());
-  if(!sklList?.length) return;
-  const rows=await Promise.all(sklList.map(async s=>{
-    const{count}=await db.from('skor_master').select('*',{count:'exact',head:true}).eq('kod_sekolah',s.kod_sekolah);
-    return{...s,murid:count||0};
-  }));
+  const{data:peng}=await db.from('v_pengisian_ppd').select('kod_sekolah,murid_direkod').eq('kod_ppd',_ppdKod());
+  const peta={};
+  (peng||[]).forEach(r=>{peta[r.kod_sekolah]=(peta[r.kod_sekolah]||0)+(r.murid_direkod||0);});
+  const rows=_sklDaerah.map(s=>({...s,murid:peta[s.kod_sekolah]||0}));
   document.getElementById('sync-body').innerHTML=`
     <table class="data-table">
       <thead><tr><th>Sekolah</th><th>Murid</th><th>Status</th></tr></thead>
@@ -248,6 +354,265 @@ async function muatStatusSync(){
         <td><span class="sp ${r.murid>0?'sp-ok':'sp-warn'}">${r.murid>0?'✓ Dikemaskini':'⏳ Belum Dikemaskini'}</span></td>
       </tr>`).join('')}</tbody>
     </table>`;
+}
+
+// ── STATUS PENGISIAN SEKOLAH
+async function muatPengisian(){
+  const jenis=document.getElementById('pg-jenis').value;
+  const ting=document.getElementById('pg-ting').value;
+  const tahun=document.getElementById('pg-tahun').value||'2026';
+  const el=document.getElementById('pengisian-result');
+  el.innerHTML='<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+  if(!_sklDaerah.length) await muatSekolahDaerah();
+  const sklKod=_sklDaerah.map(s=>s.kod_sekolah);
+
+  let qP=db.from('v_pengisian_ppd').select('*').eq('kod_ppd',_ppdKod()).eq('tahun',tahun);
+  if(jenis) qP=qP.eq('jenis_pentaksiran',jenis);
+  if(ting) qP=qP.eq('tingkatan',ting);
+  let qD=db.from('v_murid_daftar').select('*').eq('kod_ppd',_ppdKod()).eq('tahun',tahun);
+  if(ting) qD=qD.eq('tingkatan',ting);
+  let qT=db.from('template_log').select('kod_sekolah,jenis_pentaksiran,tingkatan,tahun,status,perlu_sync,tarikh_sync,is_simulasi').in('kod_sekolah',sklKod).eq('tahun',tahun);
+  if(jenis) qT=qT.eq('jenis_pentaksiran',jenis);
+  if(ting) qT=qT.eq('tingkatan',ting);
+
+  const[{data:peng},{data:daftar},{data:tpl}]=await Promise.all([qP,qD,qT]);
+
+  // Agregat per sekolah
+  const peta={};
+  _sklDaerah.forEach(s=>{peta[s.kod_sekolah]={nama:s.nama_sekolah,kod:s.kod_sekolah,direkod:0,th:0,daftar:0,tpl:0,sync:null,perluSync:false};});
+  (peng||[]).forEach(r=>{const p=peta[r.kod_sekolah];if(!p)return;p.direkod+=r.murid_direkod||0;p.th+=r.bil_th||0;});
+  (daftar||[]).forEach(r=>{const p=peta[r.kod_sekolah];if(!p)return;p.daftar+=r.murid_daftar||0;});
+  (tpl||[]).forEach(r=>{
+    if(r.is_simulasi)return;
+    const p=peta[r.kod_sekolah];if(!p)return;
+    p.tpl++;
+    if(r.perlu_sync)p.perluSync=true;
+    if(r.tarikh_sync&&(!p.sync||r.tarikh_sync>p.sync))p.sync=r.tarikh_sync;
+  });
+
+  const arr=Object.values(peta).map(p=>{
+    const pct=p.daftar>0?Math.min(100,Math.round(p.direkod/p.daftar*100)):(p.direkod>0?100:0);
+    let status,kelasSp;
+    if(p.direkod>0&&p.daftar>0&&p.direkod>=p.daftar){status='✓ Lengkap';kelasSp='sp-ok';}
+    else if(p.direkod>0){status='⏳ Separa';kelasSp='sp-warn';}
+    else if(p.tpl>0){status='📄 Template Dijana';kelasSp='sp-warn';}
+    else{status='✗ Belum Mula';kelasSp='sp-err';}
+    return{...p,pct,status,kelasSp};
+  }).sort((a,b)=>b.pct-a.pct||a.nama.localeCompare(b.nama));
+
+  const siap=arr.filter(a=>a.status==='✓ Lengkap').length;
+  const separa=arr.filter(a=>a.status==='⏳ Separa'||a.status==='📄 Template Dijana').length;
+  const belum=arr.filter(a=>a.status==='✗ Belum Mula').length;
+  document.getElementById('pg-stats').style.display='';
+  document.getElementById('pg-siap').textContent=siap;
+  document.getElementById('pg-separa').textContent=separa;
+  document.getElementById('pg-belum').textContent=belum;
+  document.getElementById('pg-sub').textContent=`${_ppdNama} · ${arr.length} sekolah · ${jenis?kodJenis(jenis):'Semua pentaksiran'}${ting?' · T'+ting:''} · ${tahun}`;
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-head"><div class="card-title">📋 Pengisian Per Sekolah</div><span class="chip">${arr.length} sekolah</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="data-table">
+          <thead><tr>
+            <th>Sekolah</th>
+            <th style="text-align:center">Murid Daftar</th>
+            <th style="text-align:center">Direkod</th>
+            <th style="text-align:center;min-width:120px">% Siap</th>
+            <th style="text-align:center">TH</th>
+            <th style="text-align:center">Template</th>
+            <th>Sync Terakhir</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody>${arr.map(p=>`<tr>
+            <td style="font-weight:600">${p.nama}<div style="font-size:11px;color:var(--muted);font-family:var(--ffm)">${p.kod}</div></td>
+            <td style="text-align:center;font-family:var(--ffm)">${p.daftar||'—'}</td>
+            <td style="text-align:center;font-family:var(--ffm);font-weight:700">${p.direkod}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;background:var(--border);border-radius:99px;height:8px;overflow:hidden">
+                  <div style="height:100%;border-radius:99px;width:${p.pct}%;background:${p.pct>=100?'var(--emerald)':p.pct>=50?'var(--amber)':'var(--rose)'}"></div>
+                </div>
+                <span style="font-size:11px;font-weight:700;width:34px;text-align:right">${p.pct}%</span>
+              </div>
+            </td>
+            <td style="text-align:center;color:${p.th>0?'var(--rose)':'var(--muted)'};font-weight:${p.th>0?'700':'400'}">${p.th||'—'}</td>
+            <td style="text-align:center">${p.tpl>0?p.tpl+(p.perluSync?' ⚠️':''):'—'}</td>
+            <td style="font-size:12px;color:var(--sub)">${p.sync?fmtTarikh(p.sync):'—'}</td>
+            <td><span class="sp ${p.kelasSp}">${p.status}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>
+        <div style="padding:8px 16px;font-size:11px;color:var(--muted)">⚠️ pada kolum Template = ada template yang belum di-sync semula selepas kemaskini.</div>
+      </div>
+    </div>`;
+}
+
+// ── TH & MURID BERISIKO
+async function muatTHRisiko(){
+  const jenis=document.getElementById('tr-jenis').value;
+  const ting=document.getElementById('tr-ting').value;
+  const isu=document.getElementById('tr-isu').value;
+  const el=document.getElementById('thrisiko-result');
+  el.innerHTML='<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+
+  let q=db.from('skor_master')
+    .select('nama_murid,kelas,tingkatan,nama_sekolah,kod_sekolah,jumlah_k1,kehadiran,masalah_3m,gred,jenis_pentaksiran')
+    .eq('ppd',_ppdNama)
+    .or('kehadiran.eq.TIDAK HADIR,masalah_3m.eq.YA,gred.eq.E,gred.eq.G')
+    .limit(1000);
+  if(jenis) q=q.eq('jenis_pentaksiran',jenis);
+  if(ting) q=q.eq('tingkatan',ting);
+  const{data,error}=await q;
+  if(error){el.innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">⚠️</div><p>Ralat: '+error.message+'</p></div>';return;}
+
+  let list=data||[];
+  const isuMurid=m=>{
+    const arr=[];
+    if(m.kehadiran==='TIDAK HADIR')arr.push('TH');
+    if((m.masalah_3m||'').toUpperCase()==='YA')arr.push('3M');
+    if(m.gred==='E'||m.gred==='G')arr.push('EG');
+    return arr;
+  };
+  if(isu) list=list.filter(m=>isuMurid(m).includes(isu));
+  if(!list.length){el.innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">✅</div><p>Tiada murid berisiko untuk tapisan ini.</p></div>';return;}
+
+  // Ringkasan per sekolah
+  const skl={};
+  list.forEach(m=>{
+    if(!skl[m.kod_sekolah])skl[m.kod_sekolah]={nama:m.nama_sekolah,th:0,m3:0,eg:0,jum:0};
+    const s=skl[m.kod_sekolah];const i=isuMurid(m);
+    if(i.includes('TH'))s.th++;
+    if(i.includes('3M'))s.m3++;
+    if(i.includes('EG'))s.eg++;
+    s.jum++;
+  });
+  const sklArr=Object.values(skl).sort((a,b)=>b.jum-a.jum);
+
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title">🏫 Ringkasan Per Sekolah</div><span class="chip">${sklArr.length} sekolah</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="data-table">
+          <thead><tr><th>Sekolah</th><th style="text-align:center">TH</th><th style="text-align:center">3M</th><th style="text-align:center">Gred E/G</th><th style="text-align:center">Jumlah Murid Terlibat</th></tr></thead>
+          <tbody>${sklArr.map(s=>`<tr>
+            <td style="font-weight:600">${s.nama}</td>
+            <td style="text-align:center;color:${s.th?'var(--rose)':'var(--muted)'}">${s.th||'—'}</td>
+            <td style="text-align:center;color:${s.m3?'var(--amber)':'var(--muted)'}">${s.m3||'—'}</td>
+            <td style="text-align:center;color:${s.eg?'var(--rose)':'var(--muted)'}">${s.eg||'—'}</td>
+            <td style="text-align:center;font-weight:700">${s.jum}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">⚠️ Senarai Murid</div><span class="chip chip-ro">${list.length} murid</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Nama</th><th>Sekolah</th><th>Kelas</th><th style="text-align:center">T</th><th style="text-align:center">K1</th><th style="text-align:center">Gred</th><th>Isu</th></tr></thead>
+          <tbody>${list.sort((a,b)=>(a.jumlah_k1||0)-(b.jumlah_k1||0)).map(m=>`<tr>
+            <td style="font-weight:600">${m.nama_murid}</td>
+            <td style="font-size:12px;color:var(--sub)">${m.nama_sekolah}</td>
+            <td>${m.kelas||'—'}</td>
+            <td style="text-align:center">${m.tingkatan||'—'}</td>
+            <td style="text-align:center;font-family:var(--ffm);font-weight:700;color:${(m.jumlah_k1||0)<15?'var(--rose)':'var(--text)'}">${m.kehadiran==='TIDAK HADIR'?'—':(m.jumlah_k1||0)}</td>
+            <td style="text-align:center"><span style="font-weight:700;color:${warnGred(m.gred)}">${m.gred||'—'}</span></td>
+            <td>${isuMurid(m).map(i=>i==='TH'?'<span class="sp sp-mute">TH</span>':i==='3M'?'<span class="sp sp-warn">3M</span>':'<span class="sp sp-err">E/G</span>').join(' ')}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── PERBANDINGAN PENTAKSIRAN
+async function muatBanding(){
+  const ting=document.getElementById('bd-ting').value;
+  const tahun=document.getElementById('bd-tahun').value||'2026';
+  const el=document.getElementById('banding-result');
+  el.innerHTML='<div class="loading-wrap"><div class="spinner spinner-dark"></div></div>';
+
+  let q=db.from('v_pengisian_ppd').select('*').eq('kod_ppd',_ppdKod()).eq('tahun',tahun);
+  if(ting) q=q.eq('tingkatan',ting);
+  const{data,error}=await q;
+  if(error){el.innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">⚠️</div><p>Ralat: '+error.message+'</p></div>';return;}
+  if(!data||!data.length){el.innerHTML='<div class="empty-state card" style="padding:40px"><div class="ico">📈</div><p>Tiada data untuk parameter ini.</p></div>';return;}
+
+  // Pivot: sekolah × jenis (GPMP berwajaran mengikut bil murid dinilai)
+  const JENIS_URUTAN=['PPSA','PASA','PSPM'];
+  const peta={};
+  data.forEach(r=>{
+    const j=kodJenis(r.jenis_pentaksiran);
+    if(!peta[r.kod_sekolah])peta[r.kod_sekolah]={nama:r.nama_sekolah,kod:r.kod_sekolah,jenis:{}};
+    if(!peta[r.kod_sekolah].jenis[j])peta[r.kod_sekolah].jenis[j]={jumGpmp:0,wajaran:0,murid:0};
+    const dinilai=(r.murid_direkod||0)-(r.bil_th||0);
+    if(r.gpmp!==null&&dinilai>0){
+      peta[r.kod_sekolah].jenis[j].jumGpmp+=parseFloat(r.gpmp)*dinilai;
+      peta[r.kod_sekolah].jenis[j].wajaran+=dinilai;
+    }
+    peta[r.kod_sekolah].jenis[j].murid+=r.murid_direkod||0;
+  });
+  const arr=Object.values(peta).map(s=>{
+    JENIS_URUTAN.forEach(j=>{
+      const d=s.jenis[j];
+      s['gpmp_'+j]=d&&d.wajaran>0?d.jumGpmp/d.wajaran:null;
+      s['murid_'+j]=d?d.murid:0;
+    });
+    return s;
+  }).sort((a,b)=>{
+    const av=a.gpmp_PSPM??a.gpmp_PASA??a.gpmp_PPSA??99;
+    const bv=b.gpmp_PSPM??b.gpmp_PASA??b.gpmp_PPSA??99;
+    return av-bv;
+  });
+
+  const selGpmp=(v)=>v===null||v===undefined?'—':`<span style="font-weight:700;color:${v<=4?'var(--emerald)':v<=6?'var(--amber)':'var(--rose)'}">${v.toFixed(2)}</span>`;
+  const trend=(s)=>{
+    const vals=JENIS_URUTAN.map(j=>s['gpmp_'+j]).filter(v=>v!==null&&v!==undefined);
+    if(vals.length<2)return'—';
+    const beza=vals[vals.length-1]-vals[0];
+    if(beza<-0.2)return'<span style="color:var(--emerald);font-weight:700">▼ '+Math.abs(beza).toFixed(2)+' ↑prestasi</span>';
+    if(beza>0.2)return'<span style="color:var(--rose);font-weight:700">▲ '+beza.toFixed(2)+' ↓prestasi</span>';
+    return'<span style="color:var(--muted)">≈ kekal</span>';
+  };
+
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><div class="card-title">📈 GPMP Mengikut Pentaksiran</div><span class="chip">${arr.length} sekolah</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <div style="padding:10px 16px;font-size:11px;color:var(--sub)">GPMP lebih rendah = prestasi lebih baik. Trend membandingkan pentaksiran terawal → terkini.</div>
+        <table class="data-table">
+          <thead><tr><th>Sekolah</th><th style="text-align:center">PPSA</th><th style="text-align:center">PASA</th><th style="text-align:center">PSPM</th><th>Trend</th></tr></thead>
+          <tbody>${arr.map(s=>`<tr>
+            <td style="font-weight:600">${s.nama}</td>
+            <td style="text-align:center">${selGpmp(s.gpmp_PPSA)}</td>
+            <td style="text-align:center">${selGpmp(s.gpmp_PASA)}</td>
+            <td style="text-align:center">${selGpmp(s.gpmp_PSPM)}</td>
+            <td>${trend(s)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📊 Carta Perbandingan GPMP</div></div>
+      <div style="position:relative;width:100%;height:320px;padding:8px"><canvas id="bd-chart" role="img" aria-label="Perbandingan GPMP antara pentaksiran per sekolah"></canvas></div>
+    </div>`;
+
+  setTimeout(()=>{
+    if(window._bdChart)window._bdChart.destroy();
+    const warna={PPSA:'#0891b2',PASA:'#d97706',PSPM:'#059669'};
+    window._bdChart=new Chart(document.getElementById('bd-chart'),{
+      type:'bar',
+      data:{
+        labels:arr.map(s=>s.nama.replace(/^SMK /,'').substring(0,14)),
+        datasets:JENIS_URUTAN.map(j=>({
+          label:j,
+          data:arr.map(s=>s['gpmp_'+j]!==null&&s['gpmp_'+j]!==undefined?parseFloat(s['gpmp_'+j].toFixed(2)):null),
+          backgroundColor:warna[j],borderRadius:3
+        })).filter(ds=>ds.data.some(v=>v!==null))
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top'},datalabels:{display:false}},
+        scales:{y:{min:0,max:10,ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxRotation:45,autoSkip:false}}}}
+    });
+  },100);
 }
 
 async function muatSekolahDaerah(){
@@ -303,7 +668,6 @@ async function simpanUser(){
   tutupModal();tunjukToast('✅ Pengguna ditambah.','success');muatPenggunaDaerah();
 }
 
-var _sklDaerah=[];
 function cariSekolahAnalisis(){
   const cari=(document.getElementById('af-cari-sekolah').value||'').toLowerCase();
   const sel=document.getElementById('af-sekolah');
@@ -311,6 +675,18 @@ function cariSekolahAnalisis(){
   let senarai=_sklDaerah;
   if(cari) senarai=senarai.filter(s=>s.kod_sekolah.toLowerCase().includes(cari)||s.nama_sekolah.toLowerCase().includes(cari));
   senarai.forEach(s=>{ sel.innerHTML+=`<option value="${s.kod_sekolah}">${s.kod_sekolah} — ${s.nama_sekolah}</option>`; });
+  muatKelasAnalisis();
+}
+
+// Isi dropdown kelas apabila sekolah dipilih
+async function muatKelasAnalisis(){
+  const skl=document.getElementById('af-sekolah').value;
+  const sel=document.getElementById('af-kelas');
+  sel.innerHTML='<option value="">Semua Kelas</option>';
+  if(!skl) return;
+  const{data}=await db.from('skor_master').select('kelas').eq('kod_sekolah',skl).limit(1000);
+  const unik=[...new Set((data||[]).map(r=>r.kelas).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Semua Kelas</option>'+unik.map(k=>`<option value="${k}">${k}</option>`).join('');
 }
 
 async function muatAnalisis(){
@@ -318,8 +694,9 @@ async function muatAnalisis(){
   const jenisPentaksiran=document.getElementById('af-jenis').value;
   const tahun=document.getElementById('af-tahun').value;
   const sklVal=document.getElementById('af-sekolah')?.value||'';
+  const kelas=document.getElementById('af-kelas')?.value||'';
   const sklNama=document.getElementById('af-sekolah')?.options[document.getElementById('af-sekolah').selectedIndex]?.text||'';
-  const params={tingkatan,jenisPentaksiran,tahun,ppd:_ppdNama,sekolah:sklVal};
+  const params={tingkatan,jenisPentaksiran,tahun,ppd:_ppdNama,sekolah:sklVal,kelas};
   const sklTeks=sklVal ? sklNama.replace(/^.*? — /,'') : 'Semua Sekolah';
   window._cetakParams={
     tingkatan,
@@ -327,7 +704,7 @@ async function muatAnalisis(){
     tahun,
     ppd:_ppdNama,
     sekolah:sklTeks,
-    kelas:''
+    kelas
   };
   await muatAnalisisSupa(params,'PPD','analisis-result');
 }
@@ -482,7 +859,6 @@ function _renderSpmPPD() {
   const cari = ((document.getElementById('spm-cari') || {}).value || '').toLowerCase();
 
   let data = _rawSpmPPD;
-  window._filteredSpmPPD = data;
   if (jenis) data = data.filter(r => r['jenis pentaksiran'].includes(jenis));
   if (cari) data = data.filter(r => (r['nama sekolah'] || '').toLowerCase().includes(cari));
   window._filteredSpmPPD = data;
