@@ -37,6 +37,13 @@
     <button class="btn-logout" onclick="doLogout()">↩ Keluar</button>
   </div>
 </nav>
+<div id="jpn-admin-bar" style="display:none;background:var(--indigo-l);border-bottom:1.5px solid var(--indigo-m);padding:8px 24px;align-items:center;gap:10px">
+  <span style="font-size:12px;font-weight:700;color:var(--indigo)">🔍 Mod Admin:</span>
+  <button id="jpn-balik-btn" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--indigo-m);background:var(--white);color:var(--indigo);font-weight:700;cursor:pointer" onclick="window.location.href='jpn.html'">← Balik ke JPN</button>
+  <select id="jpn-pilih-ppd" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:var(--ff);max-width:240px" onchange="jpnTukarPPD(this.value)">
+    <option value="">— Pilih PPD —</option>
+  </select>
+</div>
 <main>
 
 <!-- DASHBOARD -->
@@ -317,6 +324,7 @@ var _sklDaerah=[];
 
 window.addEventListener('load',async()=>{
   const ok=await semakSession('PPD'); if(!ok) return;
+  if(STATE.peranan==='JPN'){ await _initModAdminJPN(); return; }
   _ppdNama=STATE.ppd||'';
   await initNavbar(_ppdNama||'PPD','nb-ppd');
   document.getElementById('greeting').textContent=salamMasa()+', '+STATE.nama.split(' ')[0]+' 🏢';
@@ -325,6 +333,30 @@ window.addEventListener('load',async()=>{
   await muatSekolahDaerah();
   await Promise.all([muatStat(),muatStatusSync(),muatPenggunaDaerah()]);
 });
+
+// ── MOD ADMIN JPN (Lihat Sebagai PPD)
+async function _initModAdminJPN(){
+  document.getElementById('jpn-admin-bar').style.display='flex';
+  await initNavbar('JPN → PPD','nb-jpn');
+  document.getElementById('greeting').textContent='Mod Admin — Paparan PPD 🔍';
+  document.getElementById('dash-sub').textContent='Pilih PPD di bar atas untuk melihat paparan.';
+  const{data}=await db.from('ppd').select('nama_ppd').order('nama_ppd');
+  document.getElementById('jpn-pilih-ppd').innerHTML='<option value="">— Pilih PPD —</option>'+(data||[]).map(p=>`<option value="${p.nama_ppd}">${p.nama_ppd}</option>`).join('');
+}
+
+async function jpnTukarPPD(nama){
+  if(!nama) return;
+  _ppdNama=nama; STATE.ppd=nama;
+  document.getElementById('nav-badge').textContent=nama;
+  document.getElementById('greeting').textContent=salamMasa()+', '+STATE.nama.split(' ')[0]+' 🔍';
+  document.getElementById('dash-sub').textContent=nama+' · Mod Admin JPN';
+  await muatSekolahDaerah();
+  await Promise.all([muatStat(),muatStatusSync(),muatPenggunaDaerah()]);
+  if(document.getElementById('page-pengisian').classList.contains('show')) muatPengisian();
+  if(document.getElementById('page-thrisiko').classList.contains('show')) muatTHRisiko();
+  if(document.getElementById('page-banding').classList.contains('show')) muatBanding();
+  if(typeof tunjukToast==='function') tunjukToast('👁️ Melihat sebagai '+nama,'success');
+}
 
 function _ppdKod(){return 'PPD_'+(_ppdNama||'').replace('PPD ','').replace(/ /g,'_').toUpperCase();}
 
