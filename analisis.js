@@ -14,6 +14,24 @@ var _spiderData = { murid:[], soalan:[], topikAgregat:[] };
 // ── SKPSP PETA GLOBAL (kod → {huraian, bab})
 window._skpspPeta = {};
 
+// Supabase/PostgREST mengehadkan satu request kepada 1000 row.
+// Helper ini ambil semua row secara batch supaya analisis JPN tidak terpotong.
+async function _ambilSemuaBatchSupabase(binaQuery, saizBatch) {
+  var semua = [];
+  var mula = 0;
+  var batch = saizBatch || 1000;
+  while (true) {
+    var akhir = mula + batch - 1;
+    var res = await binaQuery().range(mula, akhir);
+    if (res.error) return { data: semua, error: res.error };
+    var rows = res.data || [];
+    semua = semua.concat(rows);
+    if (rows.length < batch) break;
+    mula += batch;
+  }
+  return { data: semua, error: null };
+}
+
 // ── TOOLTIP GLOBAL (position:fixed, tidak terlindung frame)
 function _ensureTooltipGlobal() {
   if (document.getElementById('sp-tooltip-global')) return;
@@ -81,19 +99,22 @@ async function muatAnalisisSupa(params, peranan, elId) {
 
   try {
     // 1. Bina query Supabase
-    var q = db.from('skor_master').select('*');
-    if (params.tingkatan)        q = q.eq('tingkatan', params.tingkatan);
-    if (params.jenisPentaksiran) q = q.eq('jenis_pentaksiran', params.jenisPentaksiran);
-    if (params.tahun)            q = q.eq('tahun', params.tahun);
-    if (params.kelas)            q = q.eq('kelas', params.kelas);
+    function binaQuerySkorMaster() {
+      var q = db.from('skor_master').select('*').order('id', { ascending: true });
+      if (params.tingkatan)        q = q.eq('tingkatan', params.tingkatan);
+      if (params.jenisPentaksiran) q = q.eq('jenis_pentaksiran', params.jenisPentaksiran);
+      if (params.tahun)            q = q.eq('tahun', params.tahun);
+      if (params.kelas)            q = q.eq('kelas', params.kelas);
 
-    // RBAC
-    if (peranan === 'SEKOLAH')                         q = q.eq('kod_sekolah', STATE.kodSekolah);
-    else if (peranan === 'PPD' || peranan === 'JU_DAERAH') { q = q.eq('ppd', STATE.ppd); if (params.sekolah) q = q.eq('kod_sekolah', params.sekolah); }
-    else if (params.sekolah)                           q = q.eq('kod_sekolah', params.sekolah);
-    else if (params.ppd)                               q = q.eq('ppd', params.ppd);
+      // RBAC
+      if (peranan === 'SEKOLAH')                         q = q.eq('kod_sekolah', STATE.kodSekolah);
+      else if (peranan === 'PPD' || peranan === 'JU_DAERAH') { q = q.eq('ppd', STATE.ppd); if (params.sekolah) q = q.eq('kod_sekolah', params.sekolah); }
+      else if (params.sekolah)                           q = q.eq('kod_sekolah', params.sekolah);
+      else if (params.ppd)                               q = q.eq('ppd', params.ppd);
+      return q;
+    }
 
-    const { data: rawData, error } = await q;
+    const { data: rawData, error } = await _ambilSemuaBatchSupabase(binaQuerySkorMaster, 1000);
     clearInterval(_st);
 
     if (error) throw new Error(error.message);
