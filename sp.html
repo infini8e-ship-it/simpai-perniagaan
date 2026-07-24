@@ -316,7 +316,7 @@ async function muatTetapanK1(){
   if(!list.length){ document.getElementById('tetapan-k1-body').innerHTML='<div class="empty-state" style="padding:30px"><p>Tiada tetapan K1. Klik + Tambah.</p></div>'; return; }
   document.getElementById('tetapan-k1-body').innerHTML=`
     <table class="data-table">
-      <thead><tr><th>Tingkatan</th><th>Jenis</th><th>Tahun</th><th>SP (40 soalan)</th><th>Skema</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Tingkatan</th><th>Jenis</th><th>Tahun</th><th>SP (40 soalan)</th><th>Skema</th><th>Status</th><th style="text-align:right">Tindakan</th></tr></thead>
       <tbody>${list.map(t=>{
         let spArr=[],skArr=[];
         try{spArr=JSON.parse(t.sp_json||'[]');}catch(e){}
@@ -328,7 +328,12 @@ async function muatTetapanK1(){
           <td style="font-size:11px;color:var(--sub);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${spArr.slice(0,5).join(', ')}${spArr.length>5?'...':''} <span class="chip">${spArr.length} SP</span></td>
           <td style="font-size:11px;color:var(--sub)">${skArr.slice(0,5).join(',')}${skArr.length>5?'...':''}</td>
           <td><span class="sp ${spArr.length===40?'sp-ok':'sp-warn'}">${spArr.length===40?'✓ Lengkap':'⚠️ '+spArr.length+'/40'}</span></td>
-          <td><button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editK1(${t.id})">✏️ Edit</button></td>
+          <td>
+            <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+              <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editK1(${t.id})">✏️ Edit</button>
+              <button class="btn-danger" style="font-size:11px;padding:4px 10px" onclick="padamTetapanK1(${t.id},'${t.tingkatan}','${t.jenis_pentaksiran}','${t.tahun}')">🗑️ Padam</button>
+            </div>
+          </td>
         </tr>`;
       }).join('')}</tbody>
     </table>`;
@@ -395,6 +400,14 @@ async function editK1(id){
   document.getElementById('k1-sp').value=spArr.join(',');
   document.getElementById('k1-skema').value=skArr.join(',');
   bukaModal('modal-tambah-k1');
+}
+
+async function padamTetapanK1(id, tingkatan, jenis, tahun){
+  if(!confirm('Padam tetapan K1 untuk T'+tingkatan+' '+kodJenis(jenis)+' '+tahun+'?')) return;
+  const{error}=await db.from('tetapan_k1').delete().eq('id',id);
+  if(error){tunjukToast('❌ '+error.message,'error');return;}
+  tunjukToast('✅ Tetapan K1 dipadam.','success');
+  muatTetapanK1();
 }
 
 var _k2GridStruktur=[{bhg:'A',soalan:6,markah:10},{bhg:'B',soalan:3,markah:15},{bhg:'C',soalan:1,markah:20}];
