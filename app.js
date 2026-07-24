@@ -216,7 +216,7 @@ function tutupModal() {
 // ── SALAM IKUT MASA
 function salamMasa() {
   const j = new Date().getHours();
-  return j < 12 ? 'Selamat Pagi' : j < 15 ? 'Selamat Tengahari' : j < 19 ? 'Selamat Petang' : 'Selamat Malam';
+  return j < 12 ? 'Selamat Pagi' : j < 15 ? 'Selamat Tengahari' : 'Selamat Petang';
 }
 
 // ── INIT NAVBAR (guna dalam semua halaman)
@@ -608,12 +608,75 @@ function renderJadualSPM(data, elId, sortKol, sortAsc) {
           <td style="text-align:center;color:var(--amber)">${r['bil d']||0}</td>
           <td style="text-align:center;color:var(--rose)">${r['bil e']||0}</td>
           <td style="text-align:center;font-weight:700;color:var(--rose)">${r['bil g']||0}</td>
-          <td style="text-align:center;font-weight:700;color:${r['gpmp']<=4?'var(--emerald)':r['gpmp']<=6?'var(--amber)':'var(--rose)'}\">${r['gpmp'].toFixed(2)}</td>
+          <td style="text-align:center;font-weight:700;color:${r['gpmp']<=4?'var(--emerald)':r['gpmp']<=6?'var(--amber)':'var(--rose)'}">${r['gpmp'].toFixed(2)}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
   el.innerHTML = html;
 }
+
+function pasangPadamTetapanK1Fallback() {
+  const body = document.getElementById('tetapan-k1-body');
+  if (!body) return;
+  const headLast = body.querySelector('thead th:last-child');
+  if (headLast && !headLast.textContent.trim()) {
+    headLast.textContent = 'Tindakan';
+    headLast.style.textAlign = 'right';
+  }
+  body.querySelectorAll('tbody tr').forEach(row => {
+    if (row.textContent.includes('Padam')) return;
+    const editBtn = row.querySelector('button[onclick^="editK1"]');
+    if (!editBtn) return;
+    const match = (editBtn.getAttribute('onclick') || '').match(/editK1\((\d+)\)/);
+    if (!match) return;
+    const cells = row.querySelectorAll('td');
+    const tingkatan = (cells[0]?.textContent || '').replace(/^T/i, '').trim();
+    const jenis = (cells[1]?.textContent || '').trim();
+    const tahun = (cells[2]?.textContent || '').trim();
+    const td = editBtn.closest('td');
+    if (!td) return;
+    td.innerHTML = '<div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">' +
+      editBtn.outerHTML +
+      '<button class="btn-danger btn-padam-k1" style="font-size:11px;padding:4px 10px" data-id="' + match[1] + '" data-tingkatan="' + tingkatan + '" data-jenis="' + jenis + '" data-tahun="' + tahun + '">🗑️ Padam</button>' +
+      '</div>';
+  });
+}
+
+async function padamTetapanK1Fallback(id, tingkatan, jenis, tahun) {
+  const jenisLabel = typeof kodJenis === 'function' ? kodJenis(jenis) : jenis;
+  const mesej = 'Padam tetapan K1 untuk T' + tingkatan + ' ' + jenisLabel + ' ' + tahun + '?';
+  const run = async () => {
+    const { error } = await db.from('tetapan_k1').delete().eq('id', id);
+    if (error) { tunjukToast('❌ ' + error.message, 'error'); return; }
+    tunjukToast('✅ Tetapan K1 dipadam.', 'success');
+    if (typeof muatTetapanK1 === 'function') muatTetapanK1();
+  };
+  if (typeof bukaKonfirm === 'function') {
+    bukaKonfirm('Padam Tetapan K1', mesej, 'Tindakan ini tidak boleh dibatalkan.', 'Ya, Padam', 'danger', run);
+    return;
+  }
+  if (confirm(mesej)) await run();
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest && e.target.closest('.btn-padam-k1');
+  if (!btn) return;
+  padamTetapanK1Fallback(btn.dataset.id, btn.dataset.tingkatan, btn.dataset.jenis, btn.dataset.tahun);
+});
+
+const _timerPadamTetapanK1 = setInterval(() => {
+  if (typeof window.muatTetapanK1 !== 'function' || window.muatTetapanK1._padamFallback) return;
+  const asal = window.muatTetapanK1;
+  window.muatTetapanK1 = async function(...args) {
+    const hasil = await asal.apply(this, args);
+    pasangPadamTetapanK1Fallback();
+    return hasil;
+  };
+  window.muatTetapanK1._padamFallback = true;
+  clearInterval(_timerPadamTetapanK1);
+}, 100);
+
+window.addEventListener('load', () => setTimeout(pasangPadamTetapanK1Fallback, 500));
 function _sortJadualSPM(elId, kol, asc) {
   const src = elId === 'spm-table-jpn' ? window._filteredSpmJPN
     : (elId === 'spm-table-guru' || elId === 'guru-spm-result-table') ? window._filteredSpmGuru
